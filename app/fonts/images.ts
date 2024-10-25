@@ -23,4 +23,4 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   const imageBuffer = fs.readFileSync(filePath)
   res.setHeader('Content-Type', 'image/jpeg') // Ajusta según el tipo de imagen
   res.send(imageBuffer)
-}
+} 
