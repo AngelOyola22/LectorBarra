@@ -12,7 +12,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   // Construye la ruta completa al archivo
-  const filePath = path.join(process.cwd(), 'shared_directory', ...imagePath)
+  const filePath = path.join(process.cwd(), '//DESKTOP-J66J7CT/graficos', ...imagePath)
 
   // Verifica si el archivo existe
   if (!fs.existsSync(filePath)) {
