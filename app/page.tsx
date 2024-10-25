@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { Star, Heart, ShoppingBag, Search } from 'lucide-react'
+import { Star, Heart, ShoppingBag, Search, Image as ImageIcon } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import dynamic from 'next/dynamic'
@@ -144,19 +144,22 @@ function BuscadorProductos() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="flex flex-col items-center justify-center">
                   <div className="relative w-full h-80 mb-6 flex items-center justify-center">
-                    <div className="relative w-64 h-64">
-                      <Image
-                        src={`${API_BASE_URL}/images/${product.Foto}`}
-                        alt={product.Nombre}
-                        layout="fill"
-                        objectFit="contain"
-                        className="rounded-lg"
-                      />
+                    <div className="relative w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                      {product.Foto ? (
+                        <Image
+                          src={`/api/images/${product.Foto}`}
+                          alt={product.Nombre}
+                          layout="fill"
+                          objectFit="contain"
+                        />
+                      ) : (
+                        <ImageIcon className="w-32 h-32 text-gray-400" />
+                      )}
                     </div>
                   </div>
                   <div className="w-full bg-gray-100 p-4 rounded-lg flex justify-center">
                     <Barcode 
-                      value={searchCode}
+                      value={product.Codigo}
                       width={1.5}
                       height={80}
                       fontSize={14}
