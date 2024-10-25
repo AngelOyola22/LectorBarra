@@ -147,7 +147,8 @@ function BuscadorProductos() {
                     <div className="relative w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                       {product.Foto ? (
                         <Image
-                          src={`./graficos/${product.Foto}`}
+                          //src={`./graficos/${product.Foto}`}
+                          src ={"./graficos/04dsc5.jpg"}
                           alt={product.Nombre}
                           layout="fill"
                           objectFit="contain"
