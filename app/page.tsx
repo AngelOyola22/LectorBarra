@@ -206,7 +206,7 @@ const BuscadorProductosDynamic = dynamic(() => Promise.resolve(BuscadorProductos
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BuscadorProductosDynamic />
+      <BuscadorProductosDynamic /> 
     </QueryClientProvider> 
   )
 }
