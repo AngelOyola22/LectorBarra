@@ -12,7 +12,7 @@ import Barcode from 'react-barcode'
 const queryClient = new QueryClient()
 
 // Utiliza una variable de entorno para la URL base de la API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://192.168.10.8:8082'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://201.183.9.59:9002'
 
 type ProductResponse = {
   Id: number;
