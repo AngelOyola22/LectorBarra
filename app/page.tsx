@@ -11,6 +11,9 @@ import Barcode from 'react-barcode'
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
 
+// Utiliza una variable de entorno para la URL base de la API
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://192.168.10.8:8081'
+
 type ProductResponse = {
   Id: number;
   ProductoId: string;
@@ -57,13 +60,13 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
     };
 
     console.log('Enviando petición POST:', {
-      url: '/api/Productos/productReadBarCode',
+      url: `${API_BASE_URL}/api/Productos/productReadBarCode`,
       data: requestData,
       headers: { 'Content-Type': 'application/json' }
     });
 
     const { data } = await axios.post<ApiResponse>(
-      '/api/Productos/productReadBarCode',
+      `${API_BASE_URL}/api/Productos/productReadBarCode`,
       requestData,
       {
         headers: {
@@ -86,7 +89,7 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 function BuscadorProductos() {
   const [searchCode, setSearchCode] = useState('')
   const [isClient, setIsClient] = useState(false)
-  const { data, refetch, isLoading, isError } = useQuery<ApiResponse, Error>(
+  const { data, refetch, isLoading, isError, error } = useQuery<ApiResponse, Error>(
     ['product', searchCode],
     () => fetchProduct(searchCode),
     { enabled: false }
@@ -135,7 +138,11 @@ function BuscadorProductos() {
 
         <main>
           {isLoading && <div className="text-center text-2xl text-gray-600">Cargando...</div>}
-          {isError && <div className="text-center text-2xl text-red-600">Error al buscar el producto</div>}
+          {isError && (
+            <div className="text-center text-2xl text-red-600">
+              Error al buscar el producto: {error instanceof Error ? error.message : 'Error desconocido'}
+            </div>
+          )}
           {product ? (
             <div className="bg-white rounded-lg shadow-lg p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -206,7 +213,7 @@ const BuscadorProductosDynamic = dynamic(() => Promise.resolve(BuscadorProductos
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BuscadorProductosDynamic /> 
+      <BuscadorProductosDynamic />
     </QueryClientProvider> 
   )
 }
