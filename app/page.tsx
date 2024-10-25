@@ -11,8 +11,8 @@ import Barcode from 'react-barcode'
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
 
-// Utiliza una variable de entorno para la URL base de la API
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://201.183.9.59:9002'
+// Definir la URL base de la API
+const API_BASE_URL = '/api'
 
 type ProductResponse = {
   Id: number;
@@ -60,13 +60,13 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
     };
 
     console.log('Enviando petición POST:', {
-      url: `${API_BASE_URL}/api/Productos/productReadBarCode`,
+      url: `${API_BASE_URL}/Productos/productReadBarCode`,
       data: requestData,
       headers: { 'Content-Type': 'application/json' }
     });
 
     const { data } = await axios.post<ApiResponse>(
-      `${API_BASE_URL}/api/Productos/productReadBarCode`,
+      `${API_BASE_URL}/Productos/productReadBarCode`,
       requestData,
       {
         headers: {
@@ -89,7 +89,7 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 function BuscadorProductos() {
   const [searchCode, setSearchCode] = useState('')
   const [isClient, setIsClient] = useState(false)
-  const { data, refetch, isLoading, isError, error } = useQuery<ApiResponse, Error>(
+  const { data, refetch, isLoading, isError } = useQuery<ApiResponse, Error>(
     ['product', searchCode],
     () => fetchProduct(searchCode),
     { enabled: false }
@@ -138,11 +138,7 @@ function BuscadorProductos() {
 
         <main>
           {isLoading && <div className="text-center text-2xl text-gray-600">Cargando...</div>}
-          {isError && (
-            <div className="text-center text-2xl text-red-600">
-              Error al buscar el producto: {error instanceof Error ? error.message : 'Error desconocido'}
-            </div>
-          )}
+          {isError && <div className="text-center text-2xl text-red-600">Error al buscar el producto</div>}
           {product ? (
             <div className="bg-white rounded-lg shadow-lg p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -150,7 +146,7 @@ function BuscadorProductos() {
                   <div className="relative w-full h-80 mb-6 flex items-center justify-center">
                     <div className="relative w-64 h-64">
                       <Image
-                        src={`/path/to/images/${product.Foto}`}
+                        src={`${API_BASE_URL}/images/${product.Foto}`}
                         alt={product.Nombre}
                         layout="fill"
                         objectFit="contain"
