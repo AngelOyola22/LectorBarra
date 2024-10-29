@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { Star, Heart, ShoppingBag, Search, Image as ImageIcon } from 'lucide-react'
+import { Image as ImageIcon } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import dynamic from 'next/dynamic'
@@ -87,70 +87,104 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 }
 
 function BuscadorProductos() {
-  const [searchCode, setSearchCode] = useState('')
+  const [barcode, setBarcode] = useState('')
+  const [displayedBarcode, setDisplayedBarcode] = useState('')
   const [isClient, setIsClient] = useState(false)
+  const [hasSearched, setHasSearched] = useState(false)
+  const barcodeBufferRef = useRef('')
+  const lastKeyPressTimeRef = useRef(0)
+
   const { data, refetch, isLoading, isError } = useQuery<ApiResponse, Error>(
-    ['product', searchCode],
-    () => fetchProduct(searchCode),
-    { enabled: false }
+    ['product', barcode],
+    () => fetchProduct(barcode),
+    { 
+      enabled: false,
+      retry: false,
+    }
   )
+
+  const handleSearch = useCallback((code: string) => {
+    if (code && code.trim() !== '') {
+      const trimmedCode = code.trim()
+      console.log('Iniciando búsqueda para el código:', trimmedCode);
+      setBarcode(trimmedCode)
+      setDisplayedBarcode(trimmedCode)
+      setHasSearched(true)
+    } else {
+      console.log('Intento de búsqueda con código vacío, ignorando.');
+    }
+  }, [])
+
+  useEffect(() => {
+    if (barcode) {
+      refetch()
+    }
+  }, [barcode, refetch])
 
   useEffect(() => {
     setIsClient(true)
-  }, [])
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    refetch()
-  }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const currentTime = new Date().getTime()
+      
+      if (event.key === 'Enter') {
+        console.log('Enter presionado. Buffer actual:', barcodeBufferRef.current);
+        if (barcodeBufferRef.current && barcodeBufferRef.current.trim() !== '') {
+          handleSearch(barcodeBufferRef.current)
+          barcodeBufferRef.current = ''
+        } else {
+          console.log('Buffer vacío al presionar Enter, ignorando.');
+        }
+      } else if (event.key.length === 1) { // Solo capturar caracteres imprimibles
+        if (currentTime - lastKeyPressTimeRef.current > 100) {
+          // Si ha pasado más de 100ms desde la última tecla, reiniciar el buffer
+          barcodeBufferRef.current = ''
+        }
+        barcodeBufferRef.current += event.key
+        console.log('Buffer actualizado:', barcodeBufferRef.current);
+      }
+      
+      lastKeyPressTimeRef.current = currentTime
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [handleSearch])
 
   const product = data?.Results[0]
+  const productNotFound = hasSearched && (!product || !product.Nombre)
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-blue-600 text-white p-6 shadow-lg">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <Star className="w-8 h-8" />
-            <h1 className="text-3xl font-bold">LOGO</h1>
-          </div>
-          <div className="flex items-center space-x-6">
-            <Heart className="w-6 h-6 hover:text-pink-300 transition-colors duration-200" />
-            <ShoppingBag className="w-6 h-6 hover:text-yellow-300 transition-colors duration-200" />
-          </div>
-        </div>
+      <header className="bg-blue-600 p-6 shadow-lg">
+        {/* Barra azul superior vacía */}
       </header>
 
       {isClient ? (
       <div className="container mx-auto p-6">
-        <form onSubmit={handleSearch} className="relative max-w-xl mx-auto mb-12">
-          <input
-            type="text"
-            placeholder="Buscar código de producto"
-            className="w-full pl-5 pr-12 py-3 rounded-full text-lg text-gray-700 border-2 border-blue-500 focus:outline-none focus:border-blue-700 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
-            value={searchCode}
-            onChange={(e) => setSearchCode(e.target.value)}
-          />
-          <button type="submit" className="absolute right-4 top-1/2 transform -translate-y-1/2 text-blue-500 hover:text-blue-700 transition-colors duration-200">
-            <Search className="w-6 h-6" />
-          </button>
-        </form>
-
         <main>
           {isLoading && <div className="text-center text-2xl text-gray-600">Cargando...</div>}
           {isError && <div className="text-center text-2xl text-red-600">Error al buscar el producto</div>}
-          {product ? (
-            <div className="bg-white rounded-lg shadow-lg p-8">
+          {productNotFound && (
+            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+              <p className="font-bold">Producto no encontrado</p>
+              <p>Por favor, intente escanear otro código de barras.</p>
+            </div>
+          )}
+          {product && product.Nombre ? (
+            <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="flex flex-col items-center justify-center">
                   <div className="relative w-full h-80 mb-6 flex items-center justify-center">
                     <div className="relative w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                       {product.Foto ? (
                         <Image
-                          //src={`./graficos/${product.Foto}`}
-                          src ={"./graficos/04dsc5.jpg"}
+                          src={`http://192.168.100.88:8081/images/${product.Foto}`}
                           alt={product.Nombre}
-                          layout="fill"
+                          width={256}
+                          height={256}
                           objectFit="contain"
                         />
                       ) : (
@@ -158,15 +192,17 @@ function BuscadorProductos() {
                       )}
                     </div>
                   </div>
-                  <div className="w-full bg-gray-100 p-4 rounded-lg flex justify-center">
-                    <Barcode 
-                      value={product.Codigo}
-                      width={1.5}
-                      height={80}
-                      fontSize={14}
-                      background="#f3f4f6"
-                    />
-                  </div>
+                  {displayedBarcode && (
+                    <div className="w-full bg-gray-100 p-4 rounded-lg flex justify-center">
+                      <Barcode 
+                        value={displayedBarcode}
+                        width={1.5}
+                        height={80}
+                        fontSize={14}
+                        background="#f3f4f6"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-col justify-between h-full">
                   <div>
@@ -194,8 +230,8 @@ function BuscadorProductos() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <h2 className="text-3xl font-bold mb-4 text-gray-800">Buscador de Productos</h2>
-              <p className="text-xl text-gray-600">Ingrese un código de producto en la barra de búsqueda y presione Enter para ver los detalles.</p>
+              <h2 className="text-3xl font-bold mb-4 text-gray-800">Consultor de Productos</h2>
+              <p className="text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
             </div>
           )}
         </main>

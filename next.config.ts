@@ -1,10 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
+  images: {
+    domains: ['192.168.100.88'],
+  },
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://201.183.9.59:9002/api/:path*',
+        destination: 'http://192.168.100.88:8081/api/:path*',
       },
     ];
   },
