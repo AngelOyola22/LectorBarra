@@ -93,6 +93,7 @@ function BuscadorProductos() {
   const [hasSearched, setHasSearched] = useState(false)
   const barcodeBufferRef = useRef('')
   const lastKeyPressTimeRef = useRef(0)
+  const [barcodeWidth, setBarcodeWidth] = useState(2)
 
   const { data, refetch, isLoading, isError } = useQuery<ApiResponse, Error>(
     ['product', barcode],
@@ -153,75 +154,100 @@ function BuscadorProductos() {
     }
   }, [handleSearch])
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 640) { // sm
+        setBarcodeWidth(1.5);
+      } else if (window.innerWidth < 768) { // md
+        setBarcodeWidth(2);
+      } else {
+        setBarcodeWidth(2.5);
+      }
+    };
+
+    handleResize(); // Llamada inicial
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const product = data?.Results[0]
   const productNotFound = hasSearched && (!product || !product.Nombre)
 
+  const calculatePrice = (product: ProductResponse) => {
+    const basePrice = parseFloat(product.PrecioClaseDefault.toFixed(3));
+    const ivaAmount = product.AIVA ? (basePrice * product.PIVA / 100) : 0;
+    return (basePrice + ivaAmount).toFixed(2);
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-blue-600 p-6 shadow-lg">
-        {/* Barra azul superior vacía */}
+      <header className="bg-blue-500 text-white p-2 sm:p-3 md:p-4 shadow-lg">
+        <p className="font-bold text-lg sm:text-xl md:text-2xl">CONSULTOR DE PRECIOS</p>
       </header>
 
       {isClient ? (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-2 sm:p-3 md:p-4">
         <main>
-          {isLoading && <div className="text-center text-2xl text-gray-600">Cargando...</div>}
-          {isError && <div className="text-center text-2xl text-red-600">Error al buscar el producto</div>}
+          {isLoading && <div className="text-center text-lg sm:text-xl md:text-2xl text-gray-600">Cargando...</div>}
+          {isError && <div className="text-center text-lg sm:text-xl md:text-2xl text-red-600">Error al buscar el producto</div>}
           {productNotFound && (
-            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
-              <p className="font-bold">Producto no encontrado</p>
-              <p>Por favor, intente escanear otro código de barras.</p>
+            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 sm:p-3 mb-2 sm:mb-3" role="alert">
+              <p className="font-bold text-base sm:text-lg md:text-xl">Producto no encontrado</p>
+              <p className="text-sm sm:text-base md:text-lg">Por favor, intente escanear otro código de barras.</p>
             </div>
           )}
           {product && product.Nombre ? (
-            <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 md:p-4 mb-2 sm:mb-3 md:mb-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
                 <div className="flex flex-col items-center justify-center">
-                  <div className="relative w-full h-80 mb-6 flex items-center justify-center">
-                    <div className="relative w-64 h-64 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                  <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
+                    <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       {product.Foto ? (
                         <Image
-                          src={`http://192.168.100.88:8081/images/${product.Foto}`}
+                          src={`http://192.168.100.59:8081/images/${product.Foto}`}
                           alt={product.Nombre}
-                          width={256}
-                          height={256}
+                          layout="fill"
                           objectFit="contain"
+                          priority
+                          className="p-2 sm:p-3 md:p-4"
                         />
                       ) : (
-                        <ImageIcon className="w-32 h-32 text-gray-400" />
+                        <ImageIcon className="w-24 sm:w-28 md:w-32 h-24 sm:h-28 md:h-32 text-gray-400" />
                       )}
                     </div>
                   </div>
                   {displayedBarcode && (
-                    <div className="w-full bg-gray-100 p-4 rounded-lg flex justify-center">
+                    <div className="w-full bg-white-100 p-2 sm:p-3 rounded-lg flex justify-center">
                       <Barcode 
                         value={displayedBarcode}
-                        width={1.5}
-                        height={80}
+                        width={barcodeWidth}
+                        height={50}
                         fontSize={14}
-                        background="#f3f4f6"
+                        background="#ffffff"
+                        lineColor="#000000"
+                        margin={10}
+                        displayValue={true}
                       />
                     </div>
                   )}
                 </div>
                 <div className="flex flex-col justify-between h-full">
                   <div>
-                    <h2 className="text-4xl font-bold mb-4 text-gray-800">{product.Nombre}</h2>
-                    <p className="text-2xl mb-4">Precio: <span className="font-bold text-green-600">${product.PrecioClaseDefault.toFixed(2)}</span></p>
-                    <p className="text-xl mb-6 text-gray-600">Cód: {product.Codigo}</p>
-                    <div className="bg-red-100 text-red-800 p-4 rounded-lg mb-6">
-                      <p className="font-semibold text-lg">Costo</p>
-                      <p className="text-3xl font-bold">${product.Costo.toFixed(2)}</p>
+                    <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
+                      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3 text-gray-800">{product.Nombre}</h2>
+                      <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
                     </div>
-                    <div className="bg-gray-100 p-6 rounded-lg">
-                      <h3 className="font-bold text-xl mb-4 text-gray-700">Detalles</h3>
-                      <ul className="space-y-2 text-gray-600">
+                    
+                    <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
+                      <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
+                      <p className="text-4xl sm:text-5xl md:text-8xl font-bold text-center">${calculatePrice(product)}</p>
+                    </div>
+                    <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
+                      <ul className="space-y-1 sm:space-y-2 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600">
                         <li><span className="font-semibold">Descripción:</span> {product.Descripcion}</li>
                         <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
                         <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
                         <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
-                        <li><span className="font-semibold">ICE:</span> {product.AICE ? `${product.PICE}%` : 'No aplica'}</li>
-                        <li><span className="font-semibold">Impuesto Verde:</span> {product.AVERDE ? `${product.PVERDE}%` : 'No aplica'}</li>
                       </ul>
                     </div>
                   </div>
@@ -229,9 +255,8 @@ function BuscadorProductos() {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-              <h2 className="text-3xl font-bold mb-4 text-gray-800">Consultor de Productos</h2>
-              <p className="text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
+            <div className="bg-white rounded-lg shadow-lg p-4 text-center">
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanear un código de barras para ver los detalles del producto.</p>
             </div>
           )}
         </main>
