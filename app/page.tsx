@@ -8,13 +8,13 @@ import axios from 'axios'
 import dynamic from 'next/dynamic'
 import Barcode from 'react-barcode'
 
-// Crear una instancia de QueryClient prueba
+// Crear una instancia de QueryClient
 const queryClient = new QueryClient()
 
 // Definir la URL base de la API
 const API_BASE_URL = '/api'
 
-// Definir la URL base para las imágenes 
+// Definir la URL base para las imágenes
 const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 
 // Definir la URL de la imagen de fallback
@@ -283,7 +283,7 @@ function BuscadorProductos() {
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
                         photoInfo={product.Foto}
-                        alt={product.Foto}
+                        alt={product.Nombre}
                       />
                     </div>
                   </div>
