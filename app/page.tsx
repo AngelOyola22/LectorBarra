@@ -8,7 +8,7 @@ import axios from 'axios'
 import dynamic from 'next/dynamic'
 import Barcode from 'react-barcode'
 
-// Crear una instancia de QueryClient
+// Crear una instancia de QueryClient prueba
 const queryClient = new QueryClient()
 
 // Definir la URL base de la API
