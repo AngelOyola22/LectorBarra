@@ -94,30 +94,54 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!photoInfo) {
       console.log('No photo info, using fallback image')
       setImgSrc(FALLBACK_IMAGE_URL)
+      setIsLoading(false)
       return
     }
 
-    setImgSrc(IMAGE_BASE_URL + photoInfo)
+    setImgSrc(`${IMAGE_BASE_URL}${photoInfo}`)
+    setIsLoading(true)
+    setError(null)
   }, [photoInfo])
 
+  const handleImageLoad = () => {
+    setIsLoading(false)
+  }
+
+  const handleImageError = () => {
+    console.log('Error loading image, falling back to LOGONEXT.png')
+    setImgSrc(FALLBACK_IMAGE_URL)
+    setIsLoading(false)
+    setError('Error al cargar la imagen')
+  }
+
   return (
-    <Image
-      src={imgSrc}
-      alt={alt}
-      layout="fill"
-      objectFit="contain"
-      priority
-      className="p-2 sm:p-3 md:p-4"
-      onError={() => {
-        console.log('Error loading image, falling back to LOGONEXT.png')
-        setImgSrc(FALLBACK_IMAGE_URL)
-      }}
-    />
+    <div className="relative w-full h-full">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+          <p className="text-gray-500">Cargando imagen...</p>
+        </div>
+      )}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+          <p className="text-red-500">{error}</p>
+        </div>
+      )}
+      <img
+        src={imgSrc}
+        alt={alt}
+        className="w-full h-full object-contain p-2 sm:p-3 md:p-4"
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+        style={{ display: isLoading ? 'none' : 'block' }}
+      />
+    </div>
   )
 }
 
@@ -259,7 +283,7 @@ function BuscadorProductos() {
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
                         photoInfo={product.Foto}
-                        alt={product.Nombre}
+                        alt={product.Foto}
                       />
                     </div>
                   </div>
@@ -298,6 +322,7 @@ function BuscadorProductos() {
                       </ul>
                     </div>
                   </div>
+                
                 </div>
               </div>
             </div>
