@@ -261,7 +261,7 @@ function BuscadorProductos() {
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
                         photoInfo={product.Foto}
-                        alt={product.Nombre}
+                        alt={product.Foto}
                       />
                     </div>
                   </div>
