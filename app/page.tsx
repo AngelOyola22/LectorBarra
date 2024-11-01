@@ -12,16 +12,14 @@ import Barcode from 'react-barcode'
 const queryClient = new QueryClient()
 
 // Definir la URL base de la API
- const API_BASE_URL = '/api'
-
-// // Definir la URL base para las imágenes
-// const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
-
-// Definir la URL base de la API
-//const API_BASE_URL = 'https://177.234.196.99:8089/api'
+const API_BASE_URL = '/api'
 
 // Definir la URL base para las imágenes
 const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
+
+// Definir la URL de la imagen de fallback
+const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
+
 type ProductResponse = {
   Id: number;
   ProductoId: string;
@@ -95,12 +93,12 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 }
 
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
-  const [imgSrc, setImgSrc] = useState<string>(IMAGE_BASE_URL + 'LOGONEXT.png')
+  const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
 
   useEffect(() => {
     if (!photoInfo) {
-      console.log('No photo info, using LOGONEXT.png')
-      setImgSrc(IMAGE_BASE_URL + 'LOGONEXT.png')
+      console.log('No photo info, using fallback image')
+      setImgSrc(FALLBACK_IMAGE_URL)
       return
     }
 
@@ -117,7 +115,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       className="p-2 sm:p-3 md:p-4"
       onError={() => {
         console.log('Error loading image, falling back to LOGONEXT.png')
-        setImgSrc(IMAGE_BASE_URL + 'LOGONEXT.png')
+        setImgSrc(FALLBACK_IMAGE_URL)
       }}
     />
   )
@@ -261,7 +259,7 @@ function BuscadorProductos() {
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
                         photoInfo={product.Foto}
-                        alt={product.Foto}
+                        alt={product.Nombre}
                       />
                     </div>
                   </div>
