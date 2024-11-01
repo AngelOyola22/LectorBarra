@@ -2,13 +2,13 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['192.168.100.59'],
+    domains: ['177.234.196.99'],
   },
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://192.168.100.59:8081/api/:path*',
+        destination: 'https://177.234.196.99:8089/api/:path*',
       },
     ];
   },

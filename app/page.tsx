@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { Image as ImageIcon } from 'lucide-react'
+import { Maximize, Minimize } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import dynamic from 'next/dynamic'
@@ -13,6 +13,9 @@ const queryClient = new QueryClient()
 
 // Definir la URL base de la API
 const API_BASE_URL = '/api'
+
+// Definir la URL base para las imágenes
+const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 
 type ProductResponse = {
   Id: number;
@@ -86,6 +89,35 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
   }
 }
 
+function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
+  const [imgSrc, setImgSrc] = useState<string>(IMAGE_BASE_URL + 'LOGONEXT.png')
+
+  useEffect(() => {
+    if (!photoInfo) {
+      console.log('No photo info, using LOGONEXT.png')
+      setImgSrc(IMAGE_BASE_URL + 'LOGONEXT.png')
+      return
+    }
+
+    setImgSrc(IMAGE_BASE_URL + photoInfo)
+  }, [photoInfo])
+
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      layout="fill"
+      objectFit="contain"
+      priority
+      className="p-2 sm:p-3 md:p-4"
+      onError={() => {
+        console.log('Error loading image, falling back to LOGONEXT.png')
+        setImgSrc(IMAGE_BASE_URL + 'LOGONEXT.png')
+      }}
+    />
+  )
+}
+
 function BuscadorProductos() {
   const [barcode, setBarcode] = useState('')
   const [displayedBarcode, setDisplayedBarcode] = useState('')
@@ -94,6 +126,7 @@ function BuscadorProductos() {
   const barcodeBufferRef = useRef('')
   const lastKeyPressTimeRef = useRef(0)
   const [barcodeWidth, setBarcodeWidth] = useState(2)
+  const [isFullScreen, setIsFullScreen] = useState(false)
 
   const { data, refetch, isLoading, isError } = useQuery<ApiResponse, Error>(
     ['product', barcode],
@@ -165,10 +198,22 @@ function BuscadorProductos() {
       }
     };
 
-    handleResize(); // Llamada inicial
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullScreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullScreen(false);
+      }
+    }
+  };
 
   const product = data?.Results[0]
   const productNotFound = hasSearched && (!product || !product.Nombre)
@@ -180,9 +225,16 @@ function BuscadorProductos() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-blue-500 text-white p-2 sm:p-3 md:p-4 shadow-lg">
+    <div className={`min-h-screen bg-gray-100 ${isFullScreen ? 'fixed inset-0 z-50' : ''}`}>
+      <header className="bg-blue-500 text-white p-2 sm:p-3 md:p-4 shadow-lg relative">
         <p className="font-bold text-lg sm:text-xl md:text-2xl">CONSULTOR DE PRECIOS</p>
+        <button 
+          onClick={toggleFullScreen} 
+          className="absolute top-2 right-2 sm:top-3 sm:right-3 md:top-4 md:right-4 text-white p-2 rounded-full hover:bg-blue-600 transition-colors duration-200"
+          aria-label={isFullScreen ? "Salir de pantalla completa" : "Entrar a pantalla completa"}
+        >
+          {isFullScreen ? <Minimize className="w-6 h-6" /> : <Maximize className="w-6 h-6" />}
+        </button>
       </header>
 
       {isClient ? (
@@ -202,18 +254,10 @@ function BuscadorProductos() {
                 <div className="flex flex-col items-center justify-center">
                   <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
-                      {product.Foto ? (
-                        <Image
-                          src={`http://192.168.100.59:8081/images/${product.Foto}`}
-                          alt={product.Nombre}
-                          layout="fill"
-                          objectFit="contain"
-                          priority
-                          className="p-2 sm:p-3 md:p-4"
-                        />
-                      ) : (
-                        <ImageIcon className="w-24 sm:w-28 md:w-32 h-24 sm:h-28 md:h-32 text-gray-400" />
-                      )}
+                      <ProductImage
+                        photoInfo={product.Foto}
+                        alt={product.Nombre}
+                      />
                     </div>
                   </div>
                   {displayedBarcode && (
@@ -240,7 +284,7 @@ function BuscadorProductos() {
                     
                     <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
                       <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
-                      <p className="text-4xl sm:text-5xl md:text-8xl font-bold text-center">${calculatePrice(product)}</p>
+                      <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
                     </div>
                     <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
                       <ul className="space-y-1 sm:space-y-2 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600">
@@ -256,7 +300,7 @@ function BuscadorProductos() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanear un código de barras para ver los detalles del producto.</p>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
             </div>
           )}
         </main>
