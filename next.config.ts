@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['https://177.234.196.99:8089'],
+    domains: ['177.234.196.99'],
   },
   async rewrites() {
     return [

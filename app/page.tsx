@@ -12,11 +12,16 @@ import Barcode from 'react-barcode'
 const queryClient = new QueryClient()
 
 // Definir la URL base de la API
-const API_BASE_URL = '/api'
+// const API_BASE_URL = '/api'
+
+// // Definir la URL base para las imágenes
+// const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
+
+// Definir la URL base de la API
+const API_BASE_URL = 'https://177.234.196.99:8089/api'
 
 // Definir la URL base para las imágenes
 const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
-
 type ProductResponse = {
   Id: number;
   ProductoId: string;
