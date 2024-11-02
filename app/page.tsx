@@ -118,6 +118,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     if (!photoInfo) {
       setError('No photo info provided')
       setIsLoading(false)
+      setImgSrc(FALLBACK_IMAGE_URL)
       return
     }
 
@@ -158,23 +159,6 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     )
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full bg-gray-100">
-        <p className="text-red-500 mb-2">{error}</p>
-        <button 
-          onClick={handleRetry}
-          className="flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          <RefreshCcw className="w-4 h-4 mr-2" />
-          Reintentar
-        </button>
-        <p className="mt-2 text-sm text-gray-500">Estado de red: {checkNetworkStatus()}</p>
-        <p className="mt-1 text-sm text-gray-500">Intentos: {retryCount}</p>
-      </div>
-    )
-  }
-
   return (
     <div className="relative w-full h-full">
       <img
@@ -182,6 +166,20 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         alt={alt}
         className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
       />
+      {error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 bg-opacity-80">
+          <p className="text-red-500 mb-2">{error}</p>
+          <button 
+            onClick={handleRetry}
+            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            <RefreshCcw className="w-4 h-4 mr-2" />
+            Reintentar
+          </button>
+          <p className="mt-2 text-sm text-gray-500">Estado de red: {checkNetworkStatus()}</p>
+          <p className="mt-1 text-sm text-gray-500">Intentos: {retryCount}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -350,7 +348,7 @@ function BuscadorProductos() {
                       <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
                     </div>
                     
-                    <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
+                    <div  className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
                       <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
                       <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
                     </div>
