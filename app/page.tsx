@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import Image from 'next/image'
 import { Maximize, Minimize } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
@@ -110,6 +109,17 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     setError(null)
   }, [photoInfo])
 
+  const handleImageLoad = () => {
+    setIsLoading(false)
+  }
+
+  const handleImageError = () => {
+    console.log('Error loading image, falling back to LOGONEXT.png')
+    setImgSrc(FALLBACK_IMAGE_URL)
+    setIsLoading(false)
+    setError('Error al cargar la imagen')
+  }
+
   return (
     <div className="relative w-full h-full">
       {isLoading && (
@@ -122,19 +132,13 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
           <p className="text-red-500">{error}</p>
         </div>
       )}
-      <Image
+      <img
         src={imgSrc}
         alt={alt}
-        layout="fill"
-        objectFit="contain"
-        className="p-2 sm:p-3 md:p-4"
-        onLoadingComplete={() => setIsLoading(false)}
-        onError={() => {
-          console.log('Error loading image, falling back to LOGONEXT.png')
-          setImgSrc(FALLBACK_IMAGE_URL)
-          setIsLoading(false)
-          setError('Error al cargar la imagen')
-        }}
+        className="w-full h-full object-contain p-2 sm:p-3 md:p-4"
+        onLoad={handleImageLoad}
+        onError={handleImageError}
+        style={{ display: isLoading ? 'none' : 'block' }}
       />
     </div>
   )
@@ -322,7 +326,7 @@ function BuscadorProductos() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p className="text-base sm:text-lg md:text-xl  text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de  barras para ver los detalles del producto.</p>
             </div>
           )}
         </main>
