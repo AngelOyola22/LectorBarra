@@ -6,6 +6,7 @@ import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import dynamic from 'next/dynamic'
 import Barcode from 'react-barcode'
+import Image from 'next/image'
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -18,9 +19,6 @@ const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 
 // Definir la URL de la imagen de fallback
 const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
-
-// Imagen de fallback en base64 (reemplaza esto con una imagen real en base64)
-const FALLBACK_IMAGE_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg=='
 
 type ProductResponse = {
   Id: number;
@@ -95,16 +93,14 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 }
 
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
-  const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_BASE64)
+  const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
-  const imgRef = useRef<HTMLImageElement>(null)
 
   const loadImage = useCallback((src: string) => {
-    return new Promise((resolve, reject) => {
-      const img = new Image()
-      img.crossOrigin = "anonymous"
+    return new Promise<string>((resolve, reject) => {
+      const img = document.createElement('img')
       img.onload = () => {
         console.log('Image loaded successfully:', src)
         resolve(src)
@@ -121,9 +117,9 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     try {
       const response = await fetch(url, { mode: 'cors' })
       const blob = await response.blob()
-      return new Promise((resolve, reject) => {
+      return new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result)
+        reader.onloadend = () => resolve(reader.result as string)
         reader.onerror = reject
         reader.readAsDataURL(blob)
       })
@@ -162,7 +158,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       // Si todas las versiones fallan, intenta cargar como data URL
       console.error('All sized versions failed, trying data URL method')
       const dataUrl = await fetchImageAsDataUrl(imageSrc)
-      return dataUrl as string
+      return dataUrl
     }
   }, [photoInfo, loadImage, fetchImageAsDataUrl])
 
@@ -175,7 +171,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       setIsLoading(false)
     } catch (err) {
       console.error('All image loading methods failed:', err)
-      setImgSrc(FALLBACK_IMAGE_BASE64)
+      setImgSrc(FALLBACK_IMAGE_URL)
       setError('Error al cargar la imagen')
       setIsLoading(false)
     }
@@ -185,10 +181,9 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     tryLoadImage()
   }, [tryLoadImage])
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    console.log('Image error occurred, falling back to base64 image')
-    console.error('Image error details:', e)
-    setImgSrc(FALLBACK_IMAGE_BASE64)
+  const handleImageError = () => {
+    console.log('Image error occurred, falling back to LOGONEXT.png')
+    setImgSrc(FALLBACK_IMAGE_URL)
     setError('Error al cargar la imagen')
   }
 
@@ -222,14 +217,14 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
           <p className="mt-1 text-sm text-gray-500">Intentos: {retryCount}</p>
         </div>
       )}
-      <img
-        ref={imgRef}
+      <Image
         src={imgSrc}
         alt={alt}
-        className="w-full h-full object-contain p-2 sm:p-3 md:p-4"
+        layout="fill"
+        objectFit="contain"
+        className="p-2 sm:p-3 md:p-4"
         style={{ display: isLoading ? 'none' : 'block' }}
         onError={handleImageError}
-        crossOrigin="anonymous"
       />
     </div>
   )
@@ -361,7 +356,6 @@ function BuscadorProductos() {
           {isError && <div className="text-center text-lg sm:text-xl md:text-2xl text-red-600">Error al buscar el producto</div>}
           {productNotFound && (
             <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 sm:p-3 mb-2 sm:mb-3" role="alert">
-              
               <p className="font-bold text-base sm:text-lg md:text-xl">Producto no encontrado</p>
               <p className="text-sm sm:text-base md:text-lg">Por favor, intente escanear otro código de barras.</p>
             </div>
@@ -369,7 +363,7 @@ function BuscadorProductos() {
           {product && product.Nombre ? (
             <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 md:p-4 mb-2 sm:mb-3 md:mb-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
-                <div className="flex flex-col items-center justify-center">
+                <div  className="flex flex-col items-center justify-center">
                   <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
