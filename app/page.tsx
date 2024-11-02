@@ -19,6 +19,9 @@ const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 // Definir la URL de la imagen de fallback
 const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
 
+// Imagen de fallback en base64 (reemplaza esto con una imagen real en base64)
+const FALLBACK_IMAGE_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg=='
+
 type ProductResponse = {
   Id: number;
   ProductoId: string;
@@ -92,7 +95,7 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 }
 
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
-  const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
+  const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_BASE64)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
@@ -138,10 +141,26 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     console.log('Attempting to load image:', imageSrc)
     
     try {
+      // Intenta cargar la imagen original
       await loadImage(imageSrc)
       return imageSrc
     } catch (err) {
-      console.error('Error loading image, trying data URL method:', err)
+      console.error('Error loading original image, trying smaller sizes:', err)
+      
+      // Intenta cargar versiones más pequeñas de la imagen
+      const sizes = ['large', 'medium', 'small']
+      for (const size of sizes) {
+        const sizedSrc = `${IMAGE_BASE_URL}${size}/${photoInfo}`
+        try {
+          await loadImage(sizedSrc)
+          return sizedSrc
+        } catch (sizeErr) {
+          console.error(`Error loading ${size} image:`, sizeErr)
+        }
+      }
+      
+      // Si todas las versiones fallan, intenta cargar como data URL
+      console.error('All sized versions failed, trying data URL method')
       const dataUrl = await fetchImageAsDataUrl(imageSrc)
       return dataUrl as string
     }
@@ -156,7 +175,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       setIsLoading(false)
     } catch (err) {
       console.error('All image loading methods failed:', err)
-      setImgSrc(FALLBACK_IMAGE_URL)
+      setImgSrc(FALLBACK_IMAGE_BASE64)
       setError('Error al cargar la imagen')
       setIsLoading(false)
     }
@@ -167,9 +186,9 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   }, [tryLoadImage])
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    console.log('Image error occurred, falling back to LOGONEXT.png')
+    console.log('Image error occurred, falling back to base64 image')
     console.error('Image error details:', e)
-    setImgSrc(FALLBACK_IMAGE_URL)
+    setImgSrc(FALLBACK_IMAGE_BASE64)
     setError('Error al cargar la imagen')
   }
 
@@ -342,6 +361,7 @@ function BuscadorProductos() {
           {isError && <div className="text-center text-lg sm:text-xl md:text-2xl text-red-600">Error al buscar el producto</div>}
           {productNotFound && (
             <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 sm:p-3 mb-2 sm:mb-3" role="alert">
+              
               <p className="font-bold text-base sm:text-lg md:text-xl">Producto no encontrado</p>
               <p className="text-sm sm:text-base md:text-lg">Por favor, intente escanear otro código de barras.</p>
             </div>
@@ -353,7 +373,6 @@ function BuscadorProductos() {
                   <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
-                        
                         photoInfo={product.Foto}
                         alt={product.Nombre}
                       />
