@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  
   images: {
-    domains: ['177.234.196.99'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -12,15 +9,6 @@ const nextConfig = {
         pathname: '/images/**',
       },
     ],
-    unoptimized: true,
-  },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'https://177.234.196.99:8089/api/:path*',
-      },
-    ];
   },
 }
 
