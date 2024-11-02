@@ -5,20 +5,13 @@ import { Maximize, Minimize } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import Barcode from 'react-barcode'
+import ProductImage from './components/ProductImage'
 
-// Crear una instancia de QueryClient
 const queryClient = new QueryClient()
 
-// Definir la URL base de la API
 const API_BASE_URL = '/api'
-
-// Definir la URL base para las imágenes
 const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
-
-// Definir la URL de la imagen de fallback
 const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
-
-// Tipos y funciones auxiliares (fetchProduct, etc.) aquí...
 
 type ProductResponse = {
   Id: number;
@@ -92,63 +85,6 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
   }
 }
 
-function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
-  const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    if (photoInfo) {
-      const img = new Image()
-      img.crossOrigin = 'anonymous'  // Añadir esto puede ayudar con problemas de CORS
-      img.src = `${IMAGE_BASE_URL}${photoInfo}`
-      
-      const handleImageLoad = () => {
-        setImgSrc(img.src)
-        setIsLoading(false)
-      }
-
-      const handleImageError = () => {
-        console.warn(`No se pudo cargar la imagen: ${img.src}`)
-        setImgSrc(FALLBACK_IMAGE_URL)
-        setIsLoading(false)
-      }
-
-      img.addEventListener('load', handleImageLoad)
-      img.addEventListener('error', handleImageError)
-
-      return () => {
-        img.removeEventListener('load', handleImageLoad)
-        img.removeEventListener('error', handleImageError)
-      }
-    } else {
-      setImgSrc(FALLBACK_IMAGE_URL)
-      setIsLoading(false)
-    }
-  }, [photoInfo])
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full bg-gray-100">
-        <p className="text-gray-500">Cargando imagen...</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="relative w-full h-full">
-      <img
-        src={imgSrc}
-        alt={alt}
-        className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
-        onError={() => {
-          console.warn(`Error al cargar la imagen: ${imgSrc}`)
-          setImgSrc(FALLBACK_IMAGE_URL)
-        }}
-      />
-    </div>
-  )
-}
-
 function BuscadorProductos() {
   const [barcode, setBarcode] = useState('')
   const [displayedBarcode, setDisplayedBarcode] = useState('')
@@ -200,9 +136,8 @@ function BuscadorProductos() {
         } else {
           console.log('Buffer vacío al presionar Enter, ignorando.');
         }
-      } else if (event.key.length === 1) { // Solo capturar caracteres imprimibles
+      } else if (event.key.length === 1) {
         if (currentTime - lastKeyPressTimeRef.current > 100) {
-          // Si ha pasado más de 100ms desde la última tecla, reiniciar el buffer
           barcodeBufferRef.current = ''
         }
         barcodeBufferRef.current += event.key
@@ -220,9 +155,9 @@ function BuscadorProductos() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 640) { // sm
+      if (window.innerWidth < 640) {
         setBarcodeWidth(1.5);
-      } else if (window.innerWidth < 768) { // md
+      } else if (window.innerWidth < 768) {
         setBarcodeWidth(2);
       } else {
         setBarcodeWidth(2.5);
@@ -269,73 +204,73 @@ function BuscadorProductos() {
       </header>
 
       {isClient ? (
-      <div className="container mx-auto p-2 sm:p-3 md:p-4">
-        <main>
-          {isLoading && <div className="text-center text-lg sm:text-xl md:text-2xl text-gray-600">Cargando...</div>}
-          {isError && <div className="text-center text-lg sm:text-xl md:text-2xl text-red-600">Error al buscar el producto</div>}
-          {productNotFound && (
-            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 sm:p-3 mb-2 sm:mb-3" role="alert">
-              <p className="font-bold text-base sm:text-lg md:text-xl">Producto no encontrado</p>
-              <p className="text-sm sm:text-base md:text-lg">Por favor, intente escanear otro código de barras.</p>
-            </div>
-          )}
-          {product && product.Nombre ? (
-            <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 md:p-4 mb-2 sm:mb-3 md:mb-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
-                <div className="flex flex-col items-center justify-center">
-                  <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
-                    <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
-                      <ProductImage
-                        photoInfo={product.Foto}
-                        alt={product.Nombre}
-                      />
+        <div className="container mx-auto p-2 sm:p-3 md:p-4">
+          <main>
+            {isLoading && <div className="text-center text-lg sm:text-xl md:text-2xl text-gray-600">Cargando...</div>}
+            {isError && <div className="text-center text-lg sm:text-xl md:text-2xl text-red-600">Error al buscar el producto</div>}
+            {productNotFound && (
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 sm:p-3 mb-2 sm:mb-3" role="alert">
+                <p className="font-bold text-base sm:text-lg md:text-xl">Producto no encontrado</p>
+                <p className="text-sm sm:text-base md:text-lg">Por favor, intente escanear otro código de barras.</p>
+              </div>
+            )}
+            {product && product.Nombre ? (
+              <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 md:p-4 mb-2 sm:mb-3 md:mb-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
+                      <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
+                        <ProductImage
+                          photoInfo={product.Foto}
+                          alt={product.Nombre}
+                        />
+                      </div>
                     </div>
+                    {displayedBarcode && (
+                      <div className="w-full bg-white-100 p-2 sm:p-3 rounded-lg flex justify-center">
+                        <Barcode 
+                          value={displayedBarcode}
+                          width={barcodeWidth}
+                          height={50}
+                          fontSize={14}
+                          background="#ffffff"
+                          lineColor="#000000"
+                          margin={10}
+                          displayValue={true}
+                        />
+                      </div>
+                    )}
                   </div>
-                  {displayedBarcode && (
-                    <div className="w-full bg-white-100 p-2 sm:p-3 rounded-lg flex justify-center">
-                      <Barcode 
-                        value={displayedBarcode}
-                        width={barcodeWidth}
-                        height={50}
-                        fontSize={14}
-                        background="#ffffff"
-                        lineColor="#000000"
-                        margin={10}
-                        displayValue={true}
-                      />
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col justify-between h-full">
-                  <div>
-                    <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
-                      <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3 text-gray-800">{product.Nombre}</h2>
-                      <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
-                    </div>
-                    
-                    <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
-                      <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
-                      <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
-                    </div>
-                    <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
-                      <ul className="space-y-1 sm:space-y-2 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600">
-                        <li><span className="font-semibold">Descripción:</span> {product.Descripcion}</li>
-                        <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
-                        <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
-                        <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
-                      </ul>
+                  <div className="flex flex-col justify-between h-full">
+                    <div>
+                      <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3 text-gray-800">{product.Nombre}</h2>
+                        <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
+                      </div>
+                      
+                      <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
+                        <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
+                        <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
+                      </div>
+                      <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
+                        <ul className="space-y-1 sm:space-y-2 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600">
+                          <li><span className="font-semibold">Descripción:</span> {product.Descripcion}</li>
+                          <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
+                          <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
+                          <li><span className="font-semibold">IVA:</span>   {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los  detalles del producto.</p>
-            </div>
-          )}
-        </main>
-      </div>
+            ) : (
+              <div className="bg-white rounded-lg shadow-lg p-4 text-center">
+                <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
+              </div>
+            )}
+          </main>
+        </div>
       ) : null}
     </div>
   )
