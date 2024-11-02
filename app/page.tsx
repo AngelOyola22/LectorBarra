@@ -100,8 +100,15 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   const loadImage = useCallback((src: string) => {
     return new Promise((resolve, reject) => {
       const img = new Image()
-      img.onload = () => resolve(src)
-      img.onerror = () => reject(new Error(`Failed to load image: ${src}`))
+      img.crossOrigin = "anonymous"  // Add this line to handle CORS issues
+      img.onload = () => {
+        console.log('Image loaded successfully:', src)
+        resolve(src)
+      }
+      img.onerror = (e) => {
+        console.error('Error loading image:', src, e)
+        reject(new Error(`Failed to load image: ${src}`))
+      }
       img.src = src
     })
   }, [])
@@ -117,6 +124,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
           throw new Error('No photo info provided')
         }
         const imageSrc = `${IMAGE_BASE_URL}${photoInfo}`
+        console.log('Attempting to load image:', imageSrc)
         await loadImage(imageSrc)
         if (isMounted) {
           setImgSrc(imageSrc)
@@ -125,9 +133,23 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       } catch (err) {
         console.error('Error loading image:', err)
         if (isMounted) {
-          setImgSrc(FALLBACK_IMAGE_URL)
-          setError('Error al cargar la imagen')
-          setIsLoading(false)
+          // Try loading the image directly without CORS
+          const directImageSrc = `${IMAGE_BASE_URL}${photoInfo}`
+          console.log('Attempting to load image directly:', directImageSrc)
+          try {
+            await loadImage(directImageSrc)
+            if (isMounted) {
+              setImgSrc(directImageSrc)
+              setIsLoading(false)
+            }
+          } catch (directErr) {
+            console.error('Error loading image directly:', directErr)
+            if (isMounted) {
+              setImgSrc(FALLBACK_IMAGE_URL)
+              setError('Error al cargar la imagen')
+              setIsLoading(false)
+            }
+          }
         }
       }
     }
@@ -139,8 +161,9 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     }
   }, [photoInfo, loadImage])
 
-  const handleImageError = () => {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     console.log('Image error occurred, falling back to LOGONEXT.png')
+    console.error('Image error details:', e)
     setImgSrc(FALLBACK_IMAGE_URL)
     setError('Error al cargar la imagen')
   }
@@ -164,6 +187,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         className="w-full h-full object-contain p-2 sm:p-3 md:p-4"
         style={{ display: isLoading ? 'none' : 'block' }}
         onError={handleImageError}
+        crossOrigin="anonymous"
       />
     </div>
   )
@@ -330,7 +354,7 @@ function BuscadorProductos() {
                   <div>
                     <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
                       <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3 text-gray-800">{product.Nombre}</h2>
-                      <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
+                      <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód:  {product.Codigo}</p>
                     </div>
                     
                     <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
@@ -340,7 +364,7 @@ function BuscadorProductos() {
                     <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
                       <ul className="space-y-1 sm:space-y-2 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600">
                         <li><span className="font-semibold">Descripción:</span> {product.Descripcion}</li>
-                        <li><span  className="font-semibold">Empaque:</span> {product.Empaque}</li>
+                        <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
                         <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
                         <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
                       </ul>
