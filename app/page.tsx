@@ -10,8 +10,8 @@ import ProductImage from './components/ProductImage'
 const queryClient = new QueryClient()
 
 const API_BASE_URL = '/api'
-const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
-const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
+//const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
+//const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
 
 type ProductResponse = {
   Id: number;
