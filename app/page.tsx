@@ -104,21 +104,20 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       return
     }
 
-    setImgSrc(`${IMAGE_BASE_URL}${photoInfo}`)
-    setIsLoading(true)
-    setError(null)
+    const img = new Image()
+    img.onload = () => {
+      setImgSrc(`${IMAGE_BASE_URL}${photoInfo}`)
+      setIsLoading(false)
+      setError(null)
+    }
+    img.onerror = () => {
+      console.log('Error loading image, falling back to LOGONEXT.png')
+      setImgSrc(FALLBACK_IMAGE_URL)
+      setIsLoading(false)
+      setError('Error al cargar la imagen')
+    }
+    img.src = `${IMAGE_BASE_URL}${photoInfo}`
   }, [photoInfo])
-
-  const handleImageLoad = () => {
-    setIsLoading(false)
-  }
-
-  const handleImageError = () => {
-    console.log('Error loading image, falling back to LOGONEXT.png')
-    setImgSrc(FALLBACK_IMAGE_URL)
-    setIsLoading(false)
-    setError('Error al cargar la imagen')
-  }
 
   return (
     <div className="relative w-full h-full">
@@ -136,8 +135,6 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         src={imgSrc}
         alt={alt}
         className="w-full h-full object-contain p-2 sm:p-3 md:p-4"
-        onLoad={handleImageLoad}
-        onError={handleImageError}
         style={{ display: isLoading ? 'none' : 'block' }}
       />
     </div>
@@ -324,10 +321,9 @@ function BuscadorProductos() {
                 </div>
               </div>
             </div>
-          ) 
- : (
+          ) : (
             <div className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
+              <p  className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
             </div>
           )}
         </main>
