@@ -5,6 +5,7 @@ import { Maximize, Minimize } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import Barcode from 'react-barcode'
+import Image from 'next/image'
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -95,34 +96,42 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (photoInfo) {
-      const img = new Image()
-      img.crossOrigin = 'anonymous'  // Añadir esto puede ayudar con problemas de CORS
-      img.src = `${IMAGE_BASE_URL}${photoInfo}`
-      
-      const handleImageLoad = () => {
-        setImgSrc(img.src)
-        setIsLoading(false)
+      const loadImage = async () => {
+        try {
+          const response = await fetch(`${IMAGE_BASE_URL}${photoInfo}`)
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          const blob = await response.blob()
+          if (blob.size > 10 * 1024 * 1024) { // Si la imagen es mayor a 10MB
+            console.warn(`Imagen grande detectada: ${photoInfo}, tamaño: ${(blob.size / (1024 * 1024)).toFixed(2)}MB`)
+          }
+          const objectUrl = URL.createObjectURL(blob)
+          setImgSrc(objectUrl)
+          setIsLoading(false)
+        } catch (e) {
+          console.error(`Error loading image: ${e instanceof Error ? e.message : String(e)}`)
+          setError(`Error al cargar la imagen: ${e instanceof Error ? e.message : String(e)}`)
+          setImgSrc(FALLBACK_IMAGE_URL)
+          setIsLoading(false)
+        }
       }
 
-      const handleImageError = () => {
-        console.warn(`No se pudo cargar la imagen: ${img.src}`)
-        setImgSrc(FALLBACK_IMAGE_URL)
-        setIsLoading(false)
-      }
-
-      img.addEventListener('load', handleImageLoad)
-      img.addEventListener('error', handleImageError)
-
-      return () => {
-        img.removeEventListener('load', handleImageLoad)
-        img.removeEventListener('error', handleImageError)
-      }
+      loadImage()
     } else {
       setImgSrc(FALLBACK_IMAGE_URL)
       setIsLoading(false)
+    }
+
+    return () => {
+      // Limpieza: revocar la URL del objeto cuando el componente se desmonte o la imagen cambie
+      if (imgSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(imgSrc)
+      }
     }
   }, [photoInfo])
 
@@ -136,15 +145,22 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
 
   return (
     <div className="relative w-full h-full">
-      <img
+      <Image
         src={imgSrc}
         alt={alt}
-        className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
+        layout="fill"
+        objectFit="contain"
+        className="p-2 sm:p-3 md:p-4"
         onError={() => {
           console.warn(`Error al cargar la imagen: ${imgSrc}`)
           setImgSrc(FALLBACK_IMAGE_URL)
         }}
       />
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-red-100 bg-opacity-75">
+          <p className="text-red-500 text-sm text-center px-2">{error}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -317,7 +333,7 @@ function BuscadorProductos() {
                       <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
                       <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
                     </div>
-                    <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
+                    <div className="bg-white-100  p-2 sm:p-3 md:p-4 rounded-lg">
                       <ul className="space-y-1 sm:space-y-2 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600">
                         <li><span className="font-semibold">Descripción:</span> {product.Descripcion}</li>
                         <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
@@ -331,7 +347,7 @@ function BuscadorProductos() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los  detalles del producto.</p>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
             </div>
           )}
         </main>
