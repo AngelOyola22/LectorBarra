@@ -131,18 +131,25 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       await loadImage(imageSrc)
     } catch (err) {
       console.error('Error loading image:', err)
-      setImgSrc(FALLBACK_IMAGE_URL)
-      setError('Error al cargar la imagen')
-      setIsLoading(false)
+      if (retryCount < 3) {
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1)
+          tryLoadImage()
+        }, 1000 * (retryCount + 1))
+      } else {
+        setImgSrc(FALLBACK_IMAGE_URL)
+        setError('Error al cargar la imagen')
+        setIsLoading(false)
+      }
     }
-  }, [photoInfo, loadImage])
+  }, [photoInfo, loadImage, retryCount])
 
   useEffect(() => {
     tryLoadImage()
   }, [tryLoadImage])
 
   const handleRetry = () => {
-    setRetryCount(prev => prev + 1)
+    setRetryCount(0)
     tryLoadImage()
   }
 
@@ -181,6 +188,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         src={imgSrc}
         alt={alt}
         className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
+        loading="lazy"
       />
     </div>
   )
@@ -347,7 +355,7 @@ function BuscadorProductos() {
                   <div>
                     <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
                       <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3 text-gray-800">{product.Nombre}</h2>
-                      <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
+                      <p className="text-lg sm:text-xl  md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
                     </div>
                     
                     <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
