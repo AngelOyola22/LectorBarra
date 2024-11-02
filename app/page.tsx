@@ -5,6 +5,7 @@ import { Maximize, Minimize } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import Barcode from 'react-barcode'
+import Image from 'next/image'
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -13,10 +14,12 @@ const queryClient = new QueryClient()
 const API_BASE_URL = '/api'
 
 // Definir la URL base para las imágenes
-const IMAGE_BASE_URL = '/api/getImage?url='
+const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 
 // Definir la URL de la imagen de fallback
-const FALLBACK_IMAGE_URL = '/api/getImage?url=LOGONEXT.png'
+const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
+
+// Tipos y funciones auxiliares (fetchProduct, etc.) aquí...
 
 type ProductResponse = {
   Id: number;
@@ -78,7 +81,6 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
         }
       }
     )
-    console.log('Respuesta de la API:', data);
     return data
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -97,39 +99,41 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!photoInfo) {
+    if (photoInfo) {
+      const loadImage = async () => {
+        try {
+          const response = await fetch(`${IMAGE_BASE_URL}${photoInfo}`)
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          const blob = await response.blob()
+          if (blob.size > 10 * 1024 * 1024) { // Si la imagen es mayor a 10MB
+            console.warn(`Imagen grande detectada: ${photoInfo}, tamaño: ${(blob.size / (1024 * 1024)).toFixed(2)}MB`)
+          }
+          const objectUrl = URL.createObjectURL(blob)
+          setImgSrc(objectUrl)
+          setIsLoading(false)
+        } catch (e) {
+          console.error(`Error loading image: ${e instanceof Error ? e.message : String(e)}`)
+          setError(`Error al cargar la imagen: ${e instanceof Error ? e.message : String(e)}`)
+          setImgSrc(FALLBACK_IMAGE_URL)
+          setIsLoading(false)
+        }
+      }
+
+      loadImage()
+    } else {
       setImgSrc(FALLBACK_IMAGE_URL)
       setIsLoading(false)
-      return
     }
-
-    const loadImage = async () => {
-      try {
-        const response = await fetch(`${IMAGE_BASE_URL}${encodeURIComponent(photoInfo)}`)
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        const blob = await response.blob()
-        const objectUrl = URL.createObjectURL(blob)
-        setImgSrc(objectUrl)
-        setIsLoading(false)
-        setError(null)
-      } catch (e) {
-        console.error(`Error loading image: ${e instanceof Error ? e.message : String(e)}`)
-        setError(`Error al cargar la imagen: ${e instanceof Error ? e.message : String(e)}`)
-        setImgSrc(FALLBACK_IMAGE_URL)
-        setIsLoading(false)
-      }
-    }
-
-    loadImage()
 
     return () => {
+      // Limpieza: revocar la URL del objeto cuando el componente se desmonte o la imagen cambie
       if (imgSrc.startsWith('blob:')) {
         URL.revokeObjectURL(imgSrc)
       }
     }
-  }, [photoInfo, imgSrc])
+  }, [photoInfo])
 
   if (isLoading) {
     return (
@@ -139,25 +143,24 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     )
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-full bg-gray-100">
-        <p className="text-red-500">{error}</p>
-      </div>
-    )
-  }
-
   return (
     <div className="relative w-full h-full">
-      <img
+      <Image
         src={imgSrc}
         alt={alt}
-        className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
+        layout="fill"
+        objectFit="contain"
+        className="p-2 sm:p-3 md:p-4"
         onError={() => {
-          console.warn('Error al cargar la imagen, usando imagen por defecto')
+          console.warn(`Error al cargar la imagen: ${imgSrc}`)
           setImgSrc(FALLBACK_IMAGE_URL)
         }}
       />
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-red-100 bg-opacity-75">
+          <p className="text-red-500 text-sm text-center px-2">{error}</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -172,7 +175,7 @@ function BuscadorProductos() {
   const [barcodeWidth, setBarcodeWidth] = useState(2)
   const [isFullScreen, setIsFullScreen] = useState(false)
 
-  const { data, refetch, isLoading, isError, error } = useQuery<ApiResponse, Error>(
+  const { data, refetch, isLoading, isError } = useQuery<ApiResponse, Error>(
     ['product', barcode],
     () => fetchProduct(barcode),
     { 
@@ -213,8 +216,9 @@ function BuscadorProductos() {
         } else {
           console.log('Buffer vacío al presionar Enter, ignorando.');
         }
-      } else if (event.key.length === 1) {
+      } else if (event.key.length === 1) { // Solo capturar caracteres imprimibles
         if (currentTime - lastKeyPressTimeRef.current > 100) {
+          // Si ha pasado más de 100ms desde la última tecla, reiniciar el buffer
           barcodeBufferRef.current = ''
         }
         barcodeBufferRef.current += event.key
@@ -232,9 +236,9 @@ function BuscadorProductos() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 640) {
+      if (window.innerWidth < 640) { // sm
         setBarcodeWidth(1.5);
-      } else if (window.innerWidth < 768) {
+      } else if (window.innerWidth < 768) { // md
         setBarcodeWidth(2);
       } else {
         setBarcodeWidth(2.5);
@@ -284,11 +288,7 @@ function BuscadorProductos() {
       <div className="container mx-auto p-2 sm:p-3 md:p-4">
         <main>
           {isLoading && <div className="text-center text-lg sm:text-xl md:text-2xl text-gray-600">Cargando...</div>}
-          {isError && (
-            <div className="text-center text-lg sm:text-xl md:text-2xl text-red-600">
-              Error al buscar el producto: {error instanceof Error ? error.message : 'Error desconocido'}
-            </div>
-          )}
+          {isError && <div className="text-center text-lg sm:text-xl md:text-2xl text-red-600">Error al buscar el producto</div>}
           {productNotFound && (
             <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 sm:p-3 mb-2 sm:mb-3" role="alert">
               <p className="font-bold text-base sm:text-lg md:text-xl">Producto no encontrado</p>
@@ -333,12 +333,12 @@ function BuscadorProductos() {
                       <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
                       <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
                     </div>
-                    <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
+                    <div className="bg-white-100  p-2 sm:p-3 md:p-4 rounded-lg">
                       <ul className="space-y-1 sm:space-y-2 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600">
                         <li><span className="font-semibold">Descripción:</span> {product.Descripcion}</li>
                         <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
                         <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
-                        <li><span  className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
+                        <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
                       </ul>
                     </div>
                   </div>
