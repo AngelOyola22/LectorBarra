@@ -18,7 +18,7 @@ const API_BASE_URL = '/api'
 const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 
 // Definir la URL de la imagen de fallback
-const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
+const FALLBACK_IMAGE_URL = '/nextlogo.png'
 
 type ProductResponse = {
   Id: number;
@@ -109,13 +109,20 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         console.error('Error loading image:', src, e)
         reject(new Error(`Failed to load image: ${src}`))
       }
+      img.crossOrigin = 'anonymous'
       img.src = src
     })
   }, [])
 
   const fetchImageAsDataUrl = useCallback(async (url: string) => {
     try {
-      const response = await fetch(url, { mode: 'cors' })
+      const response = await fetch(url, { 
+        mode: 'cors',
+        credentials: 'omit',
+        headers: {
+          'Origin': window.location.origin
+        }
+      })
       const blob = await response.blob()
       return new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
@@ -182,7 +189,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   }, [tryLoadImage])
 
   const handleImageError = () => {
-    console.log('Image error occurred, falling back to LOGONEXT.png')
+    console.log('Image error occurred, falling back to nextlogo.png')
     setImgSrc(FALLBACK_IMAGE_URL)
     setError('Error al cargar la imagen')
   }
@@ -225,6 +232,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         className="p-2 sm:p-3 md:p-4"
         style={{ display: isLoading ? 'none' : 'block' }}
         onError={handleImageError}
+        unoptimized={imgSrc.startsWith('data:')}
       />
     </div>
   )
@@ -361,9 +369,9 @@ function BuscadorProductos() {
             </div>
           )}
           {product && product.Nombre ? (
-            <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 md:p-4 mb-2 sm:mb-3 md:mb-4">
+            <div className="bg-white rounded-lg shadow-lg p-2  sm:p-3 md:p-4 mb-2 sm:mb-3 md:mb-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
-                <div  className="flex flex-col items-center justify-center">
+                <div className="flex flex-col items-center justify-center">
                   <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
