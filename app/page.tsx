@@ -251,7 +251,7 @@ function BuscadorProductos() {
   }
 
   return (
-    <div className={`min-h-screen bg-gray-100 ${isFullScreen ? 'fixed inset-0 z-50' : ''}`}>
+    <div className={`min-h-screen bg-gray-100 ${isFullScreen ? 'fixed inset-0 z-50' : ''}`} style={{ userSelect: 'none' }}>
       <header className="bg-blue-500 text-white p-2 sm:p-3 md:p-4 shadow-lg relative">
         <p className="font-bold text-lg sm:text-xl md:text-2xl">CONSULTOR DE PRECIOS</p>
         <button 
@@ -324,9 +324,10 @@ function BuscadorProductos() {
                 </div>
               </div>
             </div>
-          ) : (
+          ) 
+ : (
             <div className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de  barras para ver los detalles del producto.</p>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
             </div>
           )}
         </main>

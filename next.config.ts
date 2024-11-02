@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['lector-barra-mu.vercel.app'],
+    domains: ['177.234.196.99'],
     remotePatterns: [
       {
         protocol: 'https',
