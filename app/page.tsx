@@ -138,7 +138,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       />
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
-          <p className="text-red-500">Error al cargar la imagen</p>
+          {/* <p className="text-red-500">Error al cargar la imagen</p> */}
         </div>
       )}
     </div>
