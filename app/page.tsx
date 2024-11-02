@@ -95,29 +95,55 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const imgRef = useRef<HTMLImageElement>(null)
+
+  const loadImage = useCallback((src: string) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(src)
+      img.onerror = () => reject(new Error(`Failed to load image: ${src}`))
+      img.src = src
+    })
+  }, [])
 
   useEffect(() => {
-    if (!photoInfo) {
-      console.log('No photo info, using fallback image')
-      setImgSrc(FALLBACK_IMAGE_URL)
-      setIsLoading(false)
-      return
+    let isMounted = true
+    setIsLoading(true)
+    setError(null)
+
+    const tryLoadImage = async () => {
+      try {
+        if (!photoInfo) {
+          throw new Error('No photo info provided')
+        }
+        const imageSrc = `${IMAGE_BASE_URL}${photoInfo}`
+        await loadImage(imageSrc)
+        if (isMounted) {
+          setImgSrc(imageSrc)
+          setIsLoading(false)
+        }
+      } catch (err) {
+        console.error('Error loading image:', err)
+        if (isMounted) {
+          setImgSrc(FALLBACK_IMAGE_URL)
+          setError('Error al cargar la imagen')
+          setIsLoading(false)
+        }
+      }
     }
 
-    const img = new Image()
-    img.onload = () => {
-      setImgSrc(`${IMAGE_BASE_URL}${photoInfo}`)
-      setIsLoading(false)
-      setError(null)
+    tryLoadImage()
+
+    return () => {
+      isMounted = false
     }
-    img.onerror = () => {
-      console.log('Error loading image, falling back to LOGONEXT.png')
-      setImgSrc(FALLBACK_IMAGE_URL)
-      setIsLoading(false)
-      setError('Error al cargar la imagen')
-    }
-    img.src = `${IMAGE_BASE_URL}${photoInfo}`
-  }, [photoInfo])
+  }, [photoInfo, loadImage])
+
+  const handleImageError = () => {
+    console.log('Image error occurred, falling back to LOGONEXT.png')
+    setImgSrc(FALLBACK_IMAGE_URL)
+    setError('Error al cargar la imagen')
+  }
 
   return (
     <div className="relative w-full h-full">
@@ -132,10 +158,12 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         </div>
       )}
       <img
+        ref={imgRef}
         src={imgSrc}
         alt={alt}
         className="w-full h-full object-contain p-2 sm:p-3 md:p-4"
         style={{ display: isLoading ? 'none' : 'block' }}
+        onError={handleImageError}
       />
     </div>
   )
@@ -312,7 +340,7 @@ function BuscadorProductos() {
                     <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
                       <ul className="space-y-1 sm:space-y-2 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600">
                         <li><span className="font-semibold">Descripción:</span> {product.Descripcion}</li>
-                        <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
+                        <li><span  className="font-semibold">Empaque:</span> {product.Empaque}</li>
                         <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
                         <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
                       </ul>
@@ -323,7 +351,7 @@ function BuscadorProductos() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p  className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
             </div>
           )}
         </main>
