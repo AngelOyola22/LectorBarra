@@ -98,9 +98,9 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
 
-  const loadImage = useCallback(async (src: string) => {
+  const loadImage = useCallback((src: string) => {
     return new Promise<void>((resolve, reject) => {
-      const img = new Image()
+      const img = new window.Image()
       img.onload = () => {
         setImgSrc(src)
         setIsLoading(false)
@@ -351,8 +351,8 @@ function BuscadorProductos() {
                       <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
                     </div>
                     
-                    <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4  rounded-lg my-2 sm:my-3 md:my-4">
-                      <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
+                    <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
+                      <p  className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
                       <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
                     </div>
                     <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
