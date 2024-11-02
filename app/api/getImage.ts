@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import axios from 'axios'
+import https from 'https'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { url } = req.query
@@ -14,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const response = await axios.get(imageUrl, {
       responseType: 'arraybuffer',
-      httpsAgent: new (require('https').Agent)({  
+      httpsAgent: new https.Agent({  
         rejectUnauthorized: false
       })
     })
