@@ -6,7 +6,6 @@ import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import dynamic from 'next/dynamic'
 import Barcode from 'react-barcode'
-import Image from 'next/image'
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -97,10 +96,12 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const imgRef = useRef<HTMLImageElement>(null)
 
   const loadImage = useCallback((src: string) => {
-    return new Promise<string>((resolve, reject) => {
-      const img = document.createElement('img')
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.crossOrigin = "anonymous"
       img.onload = () => {
         console.log('Image loaded successfully:', src)
         resolve(src)
@@ -117,9 +118,9 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     try {
       const response = await fetch(url, { mode: 'cors' })
       const blob = await response.blob()
-      return new Promise<string>((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
+        reader.onloadend = () => resolve(reader.result)
         reader.onerror = reject
         reader.readAsDataURL(blob)
       })
@@ -137,28 +138,12 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     console.log('Attempting to load image:', imageSrc)
     
     try {
-      // Intenta cargar la imagen original
       await loadImage(imageSrc)
       return imageSrc
     } catch (err) {
-      console.error('Error loading original image, trying smaller sizes:', err)
-      
-      // Intenta cargar versiones más pequeñas de la imagen
-      const sizes = ['large', 'medium', 'small']
-      for (const size of sizes) {
-        const sizedSrc = `${IMAGE_BASE_URL}${size}/${photoInfo}`
-        try {
-          await loadImage(sizedSrc)
-          return sizedSrc
-        } catch (sizeErr) {
-          console.error(`Error loading ${size} image:`, sizeErr)
-        }
-      }
-      
-      // Si todas las versiones fallan, intenta cargar como data URL
-      console.error('All sized versions failed, trying data URL method')
+      console.error('Error loading image, trying data URL method:', err)
       const dataUrl = await fetchImageAsDataUrl(imageSrc)
-      return dataUrl
+      return dataUrl as string
     }
   }, [photoInfo, loadImage, fetchImageAsDataUrl])
 
@@ -181,8 +166,9 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     tryLoadImage()
   }, [tryLoadImage])
 
-  const handleImageError = () => {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     console.log('Image error occurred, falling back to LOGONEXT.png')
+    console.error('Image error details:', e)
     setImgSrc(FALLBACK_IMAGE_URL)
     setError('Error al cargar la imagen')
   }
@@ -217,14 +203,14 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
           <p className="mt-1 text-sm text-gray-500">Intentos: {retryCount}</p>
         </div>
       )}
-      <Image
+      <img
+        ref={imgRef}
         src={imgSrc}
         alt={alt}
-        layout="fill"
-        objectFit="contain"
-        className="p-2 sm:p-3 md:p-4"
+        className="w-full h-full object-contain p-2 sm:p-3 md:p-4"
         style={{ display: isLoading ? 'none' : 'block' }}
         onError={handleImageError}
+        crossOrigin="anonymous"
       />
     </div>
   )
@@ -363,10 +349,11 @@ function BuscadorProductos() {
           {product && product.Nombre ? (
             <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 md:p-4 mb-2 sm:mb-3 md:mb-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
-                <div  className="flex flex-col items-center justify-center">
+                <div className="flex flex-col items-center justify-center">
                   <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
+                        
                         photoInfo={product.Foto}
                         alt={product.Nombre}
                       />
