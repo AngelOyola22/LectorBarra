@@ -18,7 +18,7 @@ const API_BASE_URL = '/api'
 const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 
 // Definir la URL de la imagen de fallback
-const FALLBACK_IMAGE_URL = '/nextlogo.png'
+const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
 
 type ProductResponse = {
   Id: number;
@@ -99,46 +99,93 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   const [retryCount, setRetryCount] = useState(0)
 
   const loadImage = useCallback((src: string) => {
-    return new Promise<void>((resolve, reject) => {
-      const img = new window.Image()
+    return new Promise<string>((resolve, reject) => {
+      const img = document.createElement('img')
       img.onload = () => {
-        setImgSrc(src)
-        setIsLoading(false)
-        resolve()
+        console.log('Image loaded successfully:', src)
+        resolve(src)
       }
-      img.onerror = () => {
+      img.onerror = (e) => {
+        console.error('Error loading image:', src, e)
         reject(new Error(`Failed to load image: ${src}`))
       }
       img.src = src
     })
   }, [])
 
-  const tryLoadImage = useCallback(async () => {
-    if (!photoInfo) {
-      setError('No photo info provided')
-      setIsLoading(false)
-      return
+  const fetchImageAsDataUrl = useCallback(async (url: string) => {
+    try {
+      const response = await fetch(url, { mode: 'cors' })
+      const blob = await response.blob()
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+    } catch (error) {
+      console.error('Error fetching image as data URL:', error)
+      throw error
     }
+  }, [])
 
-    setIsLoading(true)
-    setError(null)
-
+  const loadImageWithRetry = useCallback(async () => {
+    if (!photoInfo) {
+      throw new Error('No photo info provided')
+    }
     const imageSrc = `${IMAGE_BASE_URL}${photoInfo}`
     console.log('Attempting to load image:', imageSrc)
-
+    
     try {
+      // Intenta cargar la imagen original
       await loadImage(imageSrc)
+      return imageSrc
     } catch (err) {
-      console.error('Error loading image:', err)
+      console.error('Error loading original image, trying smaller sizes:', err)
+      
+      // Intenta cargar versiones más pequeñas de la imagen
+      const sizes = ['large', 'medium', 'small']
+      for (const size of sizes) {
+        const sizedSrc = `${IMAGE_BASE_URL}${size}/${photoInfo}`
+        try {
+          await loadImage(sizedSrc)
+          return sizedSrc
+        } catch (sizeErr) {
+          console.error(`Error loading ${size} image:`, sizeErr)
+        }
+      }
+      
+      // Si todas las versiones fallan, intenta cargar como data URL
+      console.error('All sized versions failed, trying data URL method')
+      const dataUrl = await fetchImageAsDataUrl(imageSrc)
+      return dataUrl
+    }
+  }, [photoInfo, loadImage, fetchImageAsDataUrl])
+
+  const tryLoadImage = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const src = await loadImageWithRetry()
+      setImgSrc(src)
+      setIsLoading(false)
+    } catch (err) {
+      console.error('All image loading methods failed:', err)
       setImgSrc(FALLBACK_IMAGE_URL)
       setError('Error al cargar la imagen')
       setIsLoading(false)
     }
-  }, [photoInfo, loadImage])
+  }, [loadImageWithRetry])
 
   useEffect(() => {
     tryLoadImage()
   }, [tryLoadImage])
+
+  const handleImageError = () => {
+    console.log('Image error occurred, falling back to LOGONEXT.png')
+    setImgSrc(FALLBACK_IMAGE_URL)
+    setError('Error al cargar la imagen')
+  }
 
   const handleRetry = () => {
     setRetryCount(prev => prev + 1)
@@ -149,39 +196,35 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     return navigator.onLine ? 'Online' : 'Offline'
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full bg-gray-100">
-        <p className="text-gray-500">Cargando imagen...</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full bg-gray-100">
-        <p className="text-red-500 mb-2">{error}</p>
-        <button 
-          onClick={handleRetry}
-          className="flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          <RefreshCcw className="w-4 h-4 mr-2" />
-          Reintentar
-        </button>
-        <p className="mt-2 text-sm text-gray-500">Estado de red: {checkNetworkStatus()}</p>
-        <p className="mt-1 text-sm text-gray-500">Intentos: {retryCount}</p>
-      </div>
-    )
-  }
-
   return (
     <div className="relative w-full h-full">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+          <p className="text-gray-500">Cargando imagen...</p>
+        </div>
+      )}
+      {error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100">
+          <p className="text-red-500 mb-2">{error}</p>
+          <button 
+            onClick={handleRetry}
+            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            <RefreshCcw className="w-4 h-4 mr-2" />
+            Reintentar
+          </button>
+          <p className="mt-2 text-sm text-gray-500">Estado de red: {checkNetworkStatus()}</p>
+          <p className="mt-1 text-sm text-gray-500">Intentos: {retryCount}</p>
+        </div>
+      )}
       <Image
         src={imgSrc}
         alt={alt}
         layout="fill"
         objectFit="contain"
         className="p-2 sm:p-3 md:p-4"
+        style={{ display: isLoading ? 'none' : 'block' }}
+        onError={handleImageError}
       />
     </div>
   )
@@ -320,7 +363,7 @@ function BuscadorProductos() {
           {product && product.Nombre ? (
             <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 md:p-4 mb-2 sm:mb-3 md:mb-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
-                <div className="flex flex-col items-center justify-center">
+                <div  className="flex flex-col items-center justify-center">
                   <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
@@ -352,7 +395,7 @@ function BuscadorProductos() {
                     </div>
                     
                     <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
-                      <p  className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
+                      <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
                       <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
                     </div>
                     <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
