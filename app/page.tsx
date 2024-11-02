@@ -1,13 +1,11 @@
-"use client"
+'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Maximize, Minimize } from 'lucide-react'
+import { Maximize, Minimize, RefreshCcw } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
-import dynamic from 'next/dynamic'
 import Barcode from 'react-barcode'
 import Image from 'next/image'
-import { RefreshCcw } from 'lucide-react'
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -175,6 +173,19 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     )
   }
 
+  return (
+    <div className="relative w-full h-full">
+      <Image
+        src={imgSrc}
+        alt={alt}
+        layout="fill"
+        objectFit="contain"
+        className="p-2 sm:p-3 md:p-4"
+      />
+    </div>
+  )
+}
+
 function BuscadorProductos() {
   const [barcode, setBarcode] = useState('')
   const [displayedBarcode, setDisplayedBarcode] = useState('')
@@ -339,14 +350,14 @@ function BuscadorProductos() {
                       <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
                     </div>
                     
-                    <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
+                    <div className="bg-white-100  text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
                       <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
                       <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
                     </div>
                     <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
                       <ul className="space-y-1 sm:space-y-2 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600">
                         <li><span className="font-semibold">Descripción:</span> {product.Descripcion}</li>
-                        <li><span  className="font-semibold">Empaque:</span> {product.Empaque}</li>
+                        <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
                         <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
                         <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
                       </ul>
@@ -367,15 +378,10 @@ function BuscadorProductos() {
   )
 }
 
-const BuscadorProductosDynamic = dynamic(() => Promise.resolve(BuscadorProductos), { 
-  ssr: false,
-  loading: () => <div>Loading...</div>
-})
-
-export default function App() {
+export default function Home() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BuscadorProductosDynamic />
+      <BuscadorProductos />
     </QueryClientProvider> 
   )
 }
