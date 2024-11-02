@@ -6,6 +6,8 @@ import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import dynamic from 'next/dynamic'
 import Barcode from 'react-barcode'
+import Image from 'next/image'
+import { RefreshCcw } from 'lucide-react'
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -95,79 +97,83 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const imgRef = useRef<HTMLImageElement>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
   const loadImage = useCallback((src: string) => {
-    return new Promise((resolve, reject) => {
-      const img = new Image()
-      img.onload = () => resolve(src)
-      img.onerror = () => reject(new Error(`Failed to load image: ${src}`))
+    return new Promise<void>((resolve, reject) => {
+      const img = new window.Image()
+      img.onload = () => {
+        setImgSrc(src)
+        setIsLoading(false)
+        resolve()
+      }
+      img.onerror = () => {
+        reject(new Error(`Failed to load image: ${src}`))
+      }
       img.src = src
     })
   }, [])
 
-  useEffect(() => {
-    let isMounted = true
+  const tryLoadImage = useCallback(async () => {
+    if (!photoInfo) {
+      setError('No photo info provided')
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
-    const tryLoadImage = async () => {
-      try {
-        if (!photoInfo) {
-          throw new Error('No photo info provided')
-        }
-        const imageSrc = `${IMAGE_BASE_URL}${photoInfo}`
-        await loadImage(imageSrc)
-        if (isMounted) {
-          setImgSrc(imageSrc)
-          setIsLoading(false)
-        }
-      } catch (err) {
-        console.error('Error loading image:', err)
-        if (isMounted) {
-          setImgSrc(FALLBACK_IMAGE_URL)
-          setError('Error al cargar la imagen')
-          setIsLoading(false)
-        }
-      }
-    }
+    const imageSrc = `${IMAGE_BASE_URL}${photoInfo}`
+    console.log('Attempting to load image:', imageSrc)
 
-    tryLoadImage()
-
-    return () => {
-      isMounted = false
+    try {
+      await loadImage(imageSrc)
+    } catch (err) {
+      console.error('Error loading image:', err)
+      setImgSrc(FALLBACK_IMAGE_URL)
+      setError('Error al cargar la imagen')
+      setIsLoading(false)
     }
   }, [photoInfo, loadImage])
 
-  const handleImageError = () => {
-    console.log('Image error occurred, falling back to LOGONEXT.png')
-    setImgSrc(FALLBACK_IMAGE_URL)
-    setError('Error al cargar la imagen')
+  useEffect(() => {
+    tryLoadImage()
+  }, [tryLoadImage])
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1)
+    tryLoadImage()
   }
 
-  return (
-    <div className="relative w-full h-full">
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <p className="text-gray-500">Cargando imagen...</p>
-        </div>
-      )}
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <p className="text-red-500">{error}</p>
-        </div>
-      )}
-      <img
-        ref={imgRef}
-        src={imgSrc}
-        alt={alt}
-        className="w-full h-full object-contain p-2 sm:p-3 md:p-4"
-        style={{ display: isLoading ? 'none' : 'block' }}
-        onError={handleImageError}
-      />
-    </div>
-  )
-}
+  const checkNetworkStatus = () => {
+    return navigator.onLine ? 'Online' : 'Offline'
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full bg-gray-100">
+        <p className="text-gray-500">Cargando imagen...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-gray-100">
+        <p className="text-red-500 mb-2">{error}</p>
+        <button 
+          onClick={handleRetry}
+          className="flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          <RefreshCcw className="w-4 h-4 mr-2" />
+          Reintentar
+        </button>
+        <p className="mt-2 text-sm text-gray-500">Estado de red: {checkNetworkStatus()}</p>
+        <p className="mt-1 text-sm text-gray-500">Intentos: {retryCount}</p>
+      </div>
+    )
+  }
 
 function BuscadorProductos() {
   const [barcode, setBarcode] = useState('')
