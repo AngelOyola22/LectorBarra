@@ -78,6 +78,7 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
         }
       }
     )
+    console.log('Respuesta de la API:', data);
     return data
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -93,6 +94,7 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!photoInfo) {
@@ -101,32 +103,46 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       return
     }
 
-    const img = new Image()
-
-    img.onload = () => {
-      setImgSrc(`${IMAGE_BASE_URL}${encodeURIComponent(photoInfo)}`)
-      setIsLoading(false)
+    const loadImage = async () => {
+      try {
+        const response = await fetch(`${IMAGE_BASE_URL}${encodeURIComponent(photoInfo)}`)
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+        const blob = await response.blob()
+        const objectUrl = URL.createObjectURL(blob)
+        setImgSrc(objectUrl)
+        setIsLoading(false)
+        setError(null)
+      } catch (e) {
+        console.error(`Error loading image: ${e instanceof Error ? e.message : String(e)}`)
+        setError(`Error al cargar la imagen: ${e instanceof Error ? e.message : String(e)}`)
+        setImgSrc(FALLBACK_IMAGE_URL)
+        setIsLoading(false)
+      }
     }
 
-    img.onerror = () => {
-      console.warn('Error al cargar la imagen del producto, usando imagen por defecto')
-      setImgSrc(FALLBACK_IMAGE_URL)
-      setIsLoading(false)
-    }
-
-    // Intentar cargar la imagen
-    img.src = `${IMAGE_BASE_URL}${encodeURIComponent(photoInfo)}`
+    loadImage()
 
     return () => {
-      img.onload = null
-      img.onerror = null
+      if (imgSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(imgSrc)
+      }
     }
-  }, [photoInfo])
+  }, [photoInfo, imgSrc])
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full bg-gray-100">
         <p className="text-gray-500">Cargando imagen...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full bg-gray-100">
+        <p className="text-red-500">{error}</p>
       </div>
     )
   }
@@ -156,7 +172,7 @@ function BuscadorProductos() {
   const [barcodeWidth, setBarcodeWidth] = useState(2)
   const [isFullScreen, setIsFullScreen] = useState(false)
 
-  const { data, refetch, isLoading, isError } = useQuery<ApiResponse, Error>(
+  const { data, refetch, isLoading, isError, error } = useQuery<ApiResponse, Error>(
     ['product', barcode],
     () => fetchProduct(barcode),
     { 
@@ -268,7 +284,11 @@ function BuscadorProductos() {
       <div className="container mx-auto p-2 sm:p-3 md:p-4">
         <main>
           {isLoading && <div className="text-center text-lg sm:text-xl md:text-2xl text-gray-600">Cargando...</div>}
-          {isError && <div className="text-center text-lg sm:text-xl md:text-2xl text-red-600">Error al buscar el producto</div>}
+          {isError && (
+            <div className="text-center text-lg sm:text-xl md:text-2xl text-red-600">
+              Error al buscar el producto: {error instanceof Error ? error.message : 'Error desconocido'}
+            </div>
+          )}
           {productNotFound && (
             <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 sm:p-3 mb-2 sm:mb-3" role="alert">
               <p className="font-bold text-base sm:text-lg md:text-xl">Producto no encontrado</p>
@@ -318,7 +338,7 @@ function BuscadorProductos() {
                         <li><span className="font-semibold">Descripción:</span> {product.Descripcion}</li>
                         <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
                         <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
-                        <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
+                        <li><span  className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
                       </ul>
                     </div>
                   </div>
@@ -327,7 +347,7 @@ function BuscadorProductos() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para  ver los detalles del producto.</p>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
             </div>
           )}
         </main>

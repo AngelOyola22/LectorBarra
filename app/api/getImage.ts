@@ -10,8 +10,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const imageUrl = `https://177.234.196.99:8089/images/${url}`
+    console.log('Fetching image from:', imageUrl);
+    
     const response = await axios.get(imageUrl, {
       responseType: 'arraybuffer',
+      httpsAgent: new (require('https').Agent)({  
+        rejectUnauthorized: false
+      })
     })
 
     const contentType = response.headers['content-type']
