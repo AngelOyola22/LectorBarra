@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Maximize, Minimize } from 'lucide-react'
+import { Maximize, Minimize, RefreshCcw } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import dynamic from 'next/dynamic'
@@ -95,12 +95,13 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
   const imgRef = useRef<HTMLImageElement>(null)
 
   const loadImage = useCallback((src: string) => {
     return new Promise((resolve, reject) => {
       const img = new Image()
-      img.crossOrigin = "anonymous"  // Add this line to handle CORS issues
+      img.crossOrigin = "anonymous"
       img.onload = () => {
         console.log('Image loaded successfully:', src)
         resolve(src)
@@ -113,59 +114,72 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     })
   }, [])
 
-  useEffect(() => {
-    let isMounted = true
+  const fetchImageAsDataUrl = useCallback(async (url: string) => {
+    try {
+      const response = await fetch(url, { mode: 'cors' })
+      const blob = await response.blob()
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+    } catch (error) {
+      console.error('Error fetching image as data URL:', error)
+      throw error
+    }
+  }, [])
+
+  const loadImageWithRetry = useCallback(async () => {
+    if (!photoInfo) {
+      throw new Error('No photo info provided')
+    }
+    const imageSrc = `${IMAGE_BASE_URL}${photoInfo}`
+    console.log('Attempting to load image:', imageSrc)
+    
+    try {
+      await loadImage(imageSrc)
+      return imageSrc
+    } catch (err) {
+      console.error('Error loading image, trying data URL method:', err)
+      const dataUrl = await fetchImageAsDataUrl(imageSrc)
+      return dataUrl as string
+    }
+  }, [photoInfo, loadImage, fetchImageAsDataUrl])
+
+  const tryLoadImage = useCallback(async () => {
     setIsLoading(true)
     setError(null)
-
-    const tryLoadImage = async () => {
-      try {
-        if (!photoInfo) {
-          throw new Error('No photo info provided')
-        }
-        const imageSrc = `${IMAGE_BASE_URL}${photoInfo}`
-        console.log('Attempting to load image:', imageSrc)
-        await loadImage(imageSrc)
-        if (isMounted) {
-          setImgSrc(imageSrc)
-          setIsLoading(false)
-        }
-      } catch (err) {
-        console.error('Error loading image:', err)
-        if (isMounted) {
-          // Try loading the image directly without CORS
-          const directImageSrc = `${IMAGE_BASE_URL}${photoInfo}`
-          console.log('Attempting to load image directly:', directImageSrc)
-          try {
-            await loadImage(directImageSrc)
-            if (isMounted) {
-              setImgSrc(directImageSrc)
-              setIsLoading(false)
-            }
-          } catch (directErr) {
-            console.error('Error loading image directly:', directErr)
-            if (isMounted) {
-              setImgSrc(FALLBACK_IMAGE_URL)
-              setError('Error al cargar la imagen')
-              setIsLoading(false)
-            }
-          }
-        }
-      }
+    try {
+      const src = await loadImageWithRetry()
+      setImgSrc(src)
+      setIsLoading(false)
+    } catch (err) {
+      console.error('All image loading methods failed:', err)
+      setImgSrc(FALLBACK_IMAGE_URL)
+      setError('Error al cargar la imagen')
+      setIsLoading(false)
     }
+  }, [loadImageWithRetry])
 
+  useEffect(() => {
     tryLoadImage()
-
-    return () => {
-      isMounted = false
-    }
-  }, [photoInfo, loadImage])
+  }, [tryLoadImage])
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     console.log('Image error occurred, falling back to LOGONEXT.png')
     console.error('Image error details:', e)
     setImgSrc(FALLBACK_IMAGE_URL)
     setError('Error al cargar la imagen')
+  }
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1)
+    tryLoadImage()
+  }
+
+  const checkNetworkStatus = () => {
+    return navigator.onLine ? 'Online' : 'Offline'
   }
 
   return (
@@ -176,8 +190,17 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <p className="text-red-500">{error}</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100">
+          <p className="text-red-500 mb-2">{error}</p>
+          <button 
+            onClick={handleRetry}
+            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            <RefreshCcw className="w-4 h-4 mr-2" />
+            Reintentar
+          </button>
+          <p className="mt-2 text-sm text-gray-500">Estado de red: {checkNetworkStatus()}</p>
+          <p className="mt-1 text-sm text-gray-500">Intentos: {retryCount}</p>
         </div>
       )}
       <img
@@ -330,6 +353,7 @@ function BuscadorProductos() {
                   <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
+                        
                         photoInfo={product.Foto}
                         alt={product.Nombre}
                       />
@@ -354,7 +378,7 @@ function BuscadorProductos() {
                   <div>
                     <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
                       <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3 text-gray-800">{product.Nombre}</h2>
-                      <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód:  {product.Codigo}</p>
+                      <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
                     </div>
                     
                     <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
