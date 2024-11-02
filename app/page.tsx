@@ -5,7 +5,6 @@ import { Maximize, Minimize, RefreshCcw } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import Barcode from 'react-barcode'
-import Image from 'next/image'
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -18,6 +17,8 @@ const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 
 // Definir la URL de la imagen de fallback
 const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
+
+// Tipos y funciones auxiliares (fetchProduct, etc.) aquí...
 
 type ProductResponse = {
   Id: number;
@@ -99,13 +100,14 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
 
   const loadImage = useCallback((src: string) => {
     return new Promise<void>((resolve, reject) => {
-      const img = new window.Image()
+      const img = new Image()
       img.onload = () => {
         setImgSrc(src)
         setIsLoading(false)
         resolve()
       }
-      img.onerror = () => {
+      img.onerror = (e) => {
+        console.error('Error loading image:', e)
         reject(new Error(`Failed to load image: ${src}`))
       }
       img.src = src
@@ -175,12 +177,10 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
 
   return (
     <div className="relative w-full h-full">
-      <Image
+      <img
         src={imgSrc}
         alt={alt}
-        layout="fill"
-        objectFit="contain"
-        className="p-2 sm:p-3 md:p-4"
+        className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
       />
     </div>
   )
@@ -350,7 +350,7 @@ function BuscadorProductos() {
                       <p className="text-lg sm:text-xl md:text-2xl text-gray-600">Cód: {product.Codigo}</p>
                     </div>
                     
-                    <div className="bg-white-100  text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
+                    <div className="bg-white-100 text-red-600 p-2 sm:p-3 md:p-4 rounded-lg my-2 sm:my-3 md:my-4">
                       <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
                       <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
                     </div>
