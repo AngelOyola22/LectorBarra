@@ -12,7 +12,7 @@ const nextConfig = {
         pathname: '/images/**',
       },
     ],
-   /** unoptimized: true,*/ 
+    unoptimized: true,
   },
   async rewrites() {
     return [

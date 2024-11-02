@@ -286,8 +286,7 @@ function BuscadorProductos() {
                   <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
                     <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
                       <ProductImage
-                        photoInfo= 'LOGONEXT.png'
-                        //{product.Foto}
+                        photoInfo={product.Foto}
                         alt={product.Nombre}
                       />
                     </div>
