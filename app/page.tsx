@@ -95,20 +95,30 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
   const [isLoading, setIsLoading] = useState(true)
- 
 
   useEffect(() => {
     if (photoInfo) {
       const img = new Image()
+      img.crossOrigin = 'anonymous'  // Añadir esto puede ayudar con problemas de CORS
       img.src = `${IMAGE_BASE_URL}${photoInfo}`
-      img.onload = () => {
+      
+      const handleImageLoad = () => {
         setImgSrc(img.src)
         setIsLoading(false)
       }
-      img.onerror = () => {
-        console.error(`Failed to load image: ${img.src}`)
+
+      const handleImageError = () => {
+        console.warn(`No se pudo cargar la imagen: ${img.src}`)
         setImgSrc(FALLBACK_IMAGE_URL)
         setIsLoading(false)
+      }
+
+      img.addEventListener('load', handleImageLoad)
+      img.addEventListener('error', handleImageError)
+
+      return () => {
+        img.removeEventListener('load', handleImageLoad)
+        img.removeEventListener('error', handleImageError)
       }
     } else {
       setImgSrc(FALLBACK_IMAGE_URL)
@@ -131,6 +141,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         alt={alt}
         className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
         onError={() => {
+          console.warn(`Error al cargar la imagen: ${imgSrc}`)
           setImgSrc(FALLBACK_IMAGE_URL)
         }}
       />
@@ -319,8 +330,8 @@ function BuscadorProductos() {
               </div>
             </div>
           ) : (
-            <div  className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
+            <div className="bg-white rounded-lg shadow-lg p-4 text-center">
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los  detalles del producto.</p>
             </div>
           )}
         </main>
