@@ -95,7 +95,7 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<boolean>(false)
+ 
 
   useEffect(() => {
     if (photoInfo) {
@@ -108,7 +108,6 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       img.onerror = () => {
         console.error(`Failed to load image: ${img.src}`)
         setImgSrc(FALLBACK_IMAGE_URL)
-        setError(true)
         setIsLoading(false)
       }
     } else {
@@ -132,16 +131,9 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         alt={alt}
         className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
         onError={() => {
-          setError(true)
           setImgSrc(FALLBACK_IMAGE_URL)
         }}
       />
-      {error && 
-      (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
-          <p className="text-red-500">Error al cargar la imagen</p>
-        </div>
-      )}
     </div>
   )
 }
