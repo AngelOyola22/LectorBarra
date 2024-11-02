@@ -5,7 +5,6 @@ import { Maximize, Minimize } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import Barcode from 'react-barcode'
-import Image from 'next/image'
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -18,8 +17,6 @@ const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 
 // Definir la URL de la imagen de fallback
 const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
-
-// Tipos y funciones auxiliares (fetchProduct, etc.) aquí...
 
 type ProductResponse = {
   Id: number;
@@ -98,37 +95,32 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (photoInfo) {
-      const loadImage = async () => {
-        try {
-          const response = await fetch(`${IMAGE_BASE_URL}${photoInfo}`)
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-          }
-          const blob = await response.blob()
-          if (blob.size > 10 * 1024 * 1024) {
-            console.warn(`Imagen grande detectada: ${photoInfo}, tamaño: ${(blob.size / (1024 * 1024)).toFixed(2)}MB`)
-          }
-          const objectUrl = URL.createObjectURL(blob)
-          setImgSrc(objectUrl)
-        } catch (e) {
-          console.error(`Error loading image: ${e instanceof Error ? e.message : String(e)}`)
-          setImgSrc(FALLBACK_IMAGE_URL)
-        } finally {
-          setIsLoading(false)
-        }
-      }
+    if (!photoInfo) {
+      setImgSrc(FALLBACK_IMAGE_URL)
+      setIsLoading(false)
+      return
+    }
 
-      loadImage()
-    } else {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+
+    img.onload = () => {
+      setImgSrc(`${IMAGE_BASE_URL}${photoInfo}`)
+      setIsLoading(false)
+    }
+
+    img.onerror = () => {
+      console.warn('Error al cargar la imagen del producto, usando imagen por defecto')
       setImgSrc(FALLBACK_IMAGE_URL)
       setIsLoading(false)
     }
 
+    // Intentar cargar la imagen
+    img.src = `${IMAGE_BASE_URL}${photoInfo}`
+
     return () => {
-      if (imgSrc.startsWith('blob:')) {
-        URL.revokeObjectURL(imgSrc)
-      }
+      img.onload = null
+      img.onerror = null
     }
   }, [photoInfo])
 
@@ -142,14 +134,12 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
 
   return (
     <div className="relative w-full h-full">
-      <Image
+      <img
         src={imgSrc}
         alt={alt}
-        layout="fill"
-        objectFit="contain"
-        className="p-2 sm:p-3 md:p-4"
+        className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
         onError={() => {
-          console.warn(`Error al cargar la imagen: ${imgSrc}`)
+          console.warn('Error al cargar la imagen, usando imagen por defecto')
           setImgSrc(FALLBACK_IMAGE_URL)
         }}
       />
@@ -331,7 +321,6 @@ function BuscadorProductos() {
                         <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
                         <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
                       </ul>
-                    
                     </div>
                   </div>
                 </div>
@@ -344,7 +333,8 @@ function BuscadorProductos() {
           )}
         </main>
       </div>
-      ) : null}
+      ) 
+ : null}
     </div>
   )
 }
