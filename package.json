@@ -14,10 +14,12 @@
     "http-proxy-middleware": "^3.0.3",
     "lucide-react": "^0.453.0",
     "next": "15.0.1",
+    "next-image-loader": "^3.0.0",
     "react": "^18.2.0",
     "react-barcode": "^1.5.3",
     "react-dom": "^18.2.0",
-    "react-query": "^3.39.3"
+    "react-query": "^3.39.3",
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -5,6 +5,7 @@ import { Maximize, Minimize } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import Barcode from 'react-barcode'
+import Image from 'next/image'
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -95,39 +96,30 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
   const [isLoading, setIsLoading] = useState(true)
-
-  const loadImage = useCallback((src: string) => {
-    return new Promise<void>((resolve) => {
-      const img = new Image()
-      img.onload = () => {
-        setImgSrc(src)
-        setIsLoading(false)
-        resolve()
-      }
-      img.onerror = () => {
-        setImgSrc(FALLBACK_IMAGE_URL)
-        setIsLoading(false)
-        resolve()
-      }
-      img.src = src
-    })
-  }, [])
-
-  const tryLoadImage = useCallback(async () => {
-    if (!photoInfo) {
-      setImgSrc(FALLBACK_IMAGE_URL)
-      setIsLoading(false)
-      return
-    }
-
-    setIsLoading(true)
-    const imageSrc = `${IMAGE_BASE_URL}${photoInfo}`
-    await loadImage(imageSrc)
-  }, [photoInfo, loadImage])
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    tryLoadImage()
-  }, [tryLoadImage])
+    setIsMobile(window.innerWidth <= 768)
+    const handleResize = () => setIsMobile(window.innerWidth <= 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  const handleImageError = () => {
+    console.error('Error loading image, falling back to default')
+    setImgSrc(FALLBACK_IMAGE_URL)
+    setIsLoading(false)
+  }
+
+  useEffect(() => {
+    if (photoInfo) {
+      const imageSrc = `${IMAGE_BASE_URL}${photoInfo}`
+      setImgSrc(imageSrc)
+    } else {
+      setImgSrc(FALLBACK_IMAGE_URL)
+    }
+    setIsLoading(false)
+  }, [photoInfo])
 
   if (isLoading) {
     return (
@@ -139,10 +131,14 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
 
   return (
     <div className="relative w-full h-full">
-      <img
+      <Image
         src={imgSrc}
         alt={alt}
-        className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
+        layout="fill"
+        objectFit="contain"
+        loading="lazy"
+        onError={handleImageError}
+        sizes={isMobile ? "100vw" : "50vw"}
       />
     </div>
   )
@@ -322,6 +318,7 @@ function BuscadorProductos() {
                         <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
                         <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
                         <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
+                      
                       </ul>
                     </div>
                   </div>
@@ -331,7 +328,6 @@ function BuscadorProductos() {
           ) : (
             <div className="bg-white rounded-lg shadow-lg p-4 text-center">
               <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
-            
             </div>
           )}
         </main>
