@@ -13,10 +13,10 @@ const queryClient = new QueryClient()
 const API_BASE_URL = '/api'
 
 // Definir la URL base para las imágenes
-const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
+const IMAGE_BASE_URL = '/api/getImage?url='
 
 // Definir la URL de la imagen de fallback
-const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
+const FALLBACK_IMAGE_URL = '/api/getImage?url=LOGONEXT.png'
 
 type ProductResponse = {
   Id: number;
@@ -102,10 +102,9 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     }
 
     const img = new Image()
-    img.crossOrigin = 'anonymous'
 
     img.onload = () => {
-      setImgSrc(`${IMAGE_BASE_URL}${photoInfo}`)
+      setImgSrc(`${IMAGE_BASE_URL}${encodeURIComponent(photoInfo)}`)
       setIsLoading(false)
     }
 
@@ -116,7 +115,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     }
 
     // Intentar cargar la imagen
-    img.src = `${IMAGE_BASE_URL}${photoInfo}`
+    img.src = `${IMAGE_BASE_URL}${encodeURIComponent(photoInfo)}`
 
     return () => {
       img.onload = null
@@ -328,13 +327,12 @@ function BuscadorProductos() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para  ver los detalles del producto.</p>
             </div>
           )}
         </main>
       </div>
-      ) 
- : null}
+      ) : null}
     </div>
   )
 }
