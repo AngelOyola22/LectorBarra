@@ -97,7 +97,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
   const [isLoading, setIsLoading] = useState(true)
 
   const loadImage = useCallback((src: string) => {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       const img = new Image()
       img.onload = () => {
         setImgSrc(src)
