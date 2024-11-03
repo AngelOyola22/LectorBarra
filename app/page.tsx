@@ -96,7 +96,6 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (photoInfo) {
@@ -107,16 +106,15 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
             throw new Error(`HTTP error! status: ${response.status}`)
           }
           const blob = await response.blob()
-          if (blob.size > 10 * 1024 * 1024) { // Si la imagen es mayor a 10MB
+          if (blob.size > 10 * 1024 * 1024) {
             console.warn(`Imagen grande detectada: ${photoInfo}, tamaño: ${(blob.size / (1024 * 1024)).toFixed(2)}MB`)
           }
           const objectUrl = URL.createObjectURL(blob)
           setImgSrc(objectUrl)
-          setIsLoading(false)
         } catch (e) {
           console.error(`Error loading image: ${e instanceof Error ? e.message : String(e)}`)
-          setError(`Error al cargar la imagen: ${e instanceof Error ? e.message : String(e)}`)
           setImgSrc(FALLBACK_IMAGE_URL)
+        } finally {
           setIsLoading(false)
         }
       }
@@ -128,7 +126,6 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     }
 
     return () => {
-      // Limpieza: revocar la URL del objeto cuando el componente se desmonte o la imagen cambie
       if (imgSrc.startsWith('blob:')) {
         URL.revokeObjectURL(imgSrc)
       }
@@ -156,11 +153,6 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
           setImgSrc(FALLBACK_IMAGE_URL)
         }}
       />
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-red-100 bg-opacity-75">
-          <p className="text-red-500 text-sm text-center px-2">{error}</p>
-        </div>
-      )}
     </div>
   )
 }
@@ -216,9 +208,8 @@ function BuscadorProductos() {
         } else {
           console.log('Buffer vacío al presionar Enter, ignorando.');
         }
-      } else if (event.key.length === 1) { // Solo capturar caracteres imprimibles
+      } else if (event.key.length === 1) {
         if (currentTime - lastKeyPressTimeRef.current > 100) {
-          // Si ha pasado más de 100ms desde la última tecla, reiniciar el buffer
           barcodeBufferRef.current = ''
         }
         barcodeBufferRef.current += event.key
@@ -236,9 +227,9 @@ function BuscadorProductos() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 640) { // sm
+      if (window.innerWidth < 640) {
         setBarcodeWidth(1.5);
-      } else if (window.innerWidth < 768) { // md
+      } else if (window.innerWidth < 768) {
         setBarcodeWidth(2);
       } else {
         setBarcodeWidth(2.5);
@@ -333,13 +324,14 @@ function BuscadorProductos() {
                       <p className="font-semibold text-lg sm:text-xl md:text-2xl mb-1 sm:mb-2">Precio:</p>
                       <p className="text-4xl sm:text-5xl md:text-6xl font-bold text-center">${calculatePrice(product)}</p>
                     </div>
-                    <div className="bg-white-100  p-2 sm:p-3 md:p-4 rounded-lg">
+                    <div className="bg-white-100 p-2 sm:p-3 md:p-4 rounded-lg">
                       <ul className="space-y-1 sm:space-y-2 text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600">
                         <li><span className="font-semibold">Descripción:</span> {product.Descripcion}</li>
                         <li><span className="font-semibold">Empaque:</span> {product.Empaque}</li>
                         <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
                         <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
                       </ul>
+                    
                     </div>
                   </div>
                 </div>
