@@ -5,7 +5,6 @@ import { Maximize, Minimize } from 'lucide-react'
 import { useQuery, QueryClient, QueryClientProvider } from 'react-query'
 import axios from 'axios'
 import Barcode from 'react-barcode'
-import Image from 'next/image'
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -99,36 +98,31 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
 
   useEffect(() => {
     if (photoInfo) {
-      const loadImage = async () => {
-        try {
-          const response = await fetch(`${IMAGE_BASE_URL}${photoInfo}`)
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`)
-          }
-          const blob = await response.blob()
-          if (blob.size > 10 * 1024 * 1024) {
-            console.warn(`Imagen grande detectada: ${photoInfo}, tamaño: ${(blob.size / (1024 * 1024)).toFixed(2)}MB`)
-          }
-          const objectUrl = URL.createObjectURL(blob)
-          setImgSrc(objectUrl)
-        } catch (e) {
-          console.error(`Error loading image: ${e instanceof Error ? e.message : String(e)}`)
-          setImgSrc(FALLBACK_IMAGE_URL)
-        } finally {
-          setIsLoading(false)
-        }
+      const img = new Image()
+      img.crossOrigin = 'anonymous'  // Añadir esto puede ayudar con problemas de CORS
+      img.src = `${IMAGE_BASE_URL}${photoInfo}`
+      
+      const handleImageLoad = () => {
+        setImgSrc(img.src)
+        setIsLoading(false)
       }
 
-      loadImage()
+      const handleImageError = () => {
+        console.warn(`No se pudo cargar la imagen: ${img.src}`)
+        setImgSrc(FALLBACK_IMAGE_URL)
+        setIsLoading(false)
+      }
+
+      img.addEventListener('load', handleImageLoad)
+      img.addEventListener('error', handleImageError)
+
+      return () => {
+        img.removeEventListener('load', handleImageLoad)
+        img.removeEventListener('error', handleImageError)
+      }
     } else {
       setImgSrc(FALLBACK_IMAGE_URL)
       setIsLoading(false)
-    }
-
-    return () => {
-      if (imgSrc.startsWith('blob:')) {
-        URL.revokeObjectURL(imgSrc)
-      }
     }
   }, [photoInfo])
 
@@ -142,12 +136,10 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
 
   return (
     <div className="relative w-full h-full">
-      <Image
+      <img
         src={imgSrc}
         alt={alt}
-        layout="fill"
-        objectFit="contain"
-        className="p-2 sm:p-3 md:p-4"
+        className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
         onError={() => {
           console.warn(`Error al cargar la imagen: ${imgSrc}`)
           setImgSrc(FALLBACK_IMAGE_URL)
@@ -208,8 +200,9 @@ function BuscadorProductos() {
         } else {
           console.log('Buffer vacío al presionar Enter, ignorando.');
         }
-      } else if (event.key.length === 1) {
+      } else if (event.key.length === 1) { // Solo capturar caracteres imprimibles
         if (currentTime - lastKeyPressTimeRef.current > 100) {
+          // Si ha pasado más de 100ms desde la última tecla, reiniciar el buffer
           barcodeBufferRef.current = ''
         }
         barcodeBufferRef.current += event.key
@@ -227,9 +220,9 @@ function BuscadorProductos() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 640) {
+      if (window.innerWidth < 640) { // sm
         setBarcodeWidth(1.5);
-      } else if (window.innerWidth < 768) {
+      } else if (window.innerWidth < 768) { // md
         setBarcodeWidth(2);
       } else {
         setBarcodeWidth(2.5);
@@ -331,7 +324,6 @@ function BuscadorProductos() {
                         <li><span className="font-semibold">Stock:</span> {product.Stock}</li>
                         <li><span className="font-semibold">IVA:</span> {product.AIVA ? `${product.PIVA}%` : 'No aplica'}</li>
                       </ul>
-                    
                     </div>
                   </div>
                 </div>
@@ -339,7 +331,7 @@ function BuscadorProductos() {
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-lg p-4 text-center">
-              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los detalles del producto.</p>
+              <p className="text-base sm:text-lg md:text-xl text-gray-600">Escanee un código de barras para ver los  detalles del producto.</p>
             </div>
           )}
         </main>
