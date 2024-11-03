@@ -13,7 +13,7 @@ const queryClient = new QueryClient()
 const API_BASE_URL = '/api'
 
 // Definir la URL base para las imágenes
-//const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
+const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 
 // Definir la URL de la imagen de fallback
 const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
@@ -100,7 +100,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
     if (photoInfo) {
       const img = new Image()
       img.crossOrigin = 'anonymous'  // Añadir esto puede ayudar con problemas de CORS
-      //img.src = `${IMAGE_BASE_URL}${photoInfo}`
+      img.src = `${IMAGE_BASE_URL}${photoInfo}`
       img.src = FALLBACK_IMAGE_URL
       const handleImageLoad = () => {
         setImgSrc(img.src)
@@ -109,7 +109,8 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
 
       const handleImageError = () => {
         console.warn(`No se pudo cargar la imagen: ${img.src}`)
-        setImgSrc(FALLBACK_IMAGE_URL)
+        //setImgSrc(FALLBACK_IMAGE_URL)
+        setImgSrc(`${IMAGE_BASE_URL}${photoInfo}`)
         setIsLoading(false)
       }
 
