@@ -13,7 +13,7 @@ const queryClient = new QueryClient()
 const API_BASE_URL = '/api'
 
 // Definir la URL base para las imágenes
-const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
+//const IMAGE_BASE_URL = 'https://177.234.196.99:8089/images/'
 
 // Definir la URL de la imagen de fallback
 const FALLBACK_IMAGE_URL = 'https://177.234.196.99:8089/images/LOGONEXT.png'
