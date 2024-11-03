@@ -101,7 +101,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
       const img = new Image()
       img.crossOrigin = 'anonymous'  // Añadir esto puede ayudar con problemas de CORS
       img.src = `${IMAGE_BASE_URL}${photoInfo}`
-      img.src = FALLBACK_IMAGE_URL
+      //img.src = FALLBACK_IMAGE_URL
       const handleImageLoad = () => {
         setImgSrc(img.src)
         setIsLoading(false)
