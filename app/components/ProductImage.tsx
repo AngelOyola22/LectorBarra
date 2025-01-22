@@ -9,7 +9,6 @@ const FALLBACK_IMAGE_URL = "https://177.234.196.99:8089/images/LOGONEXT.png";
 export default function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
   const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const objectUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -25,9 +24,7 @@ export default function ProductImage({ photoInfo, alt }: { photoInfo: string | n
           objectUrlRef.current = objectUrl; // Guardar el objeto URL en la referencia
           setImgSrc(objectUrl);
           setIsLoading(false);
-        } catch (e) {
-          //console.error(`Error loading image: ${e instanceof Error ? e.message : String(e)}`);
-          //setError(`Error loading image: ${e instanceof Error ? e.message : String(e)}`);
+        } catch {
           setImgSrc(FALLBACK_IMAGE_URL);
           setIsLoading(false);
         }
@@ -46,7 +43,7 @@ export default function ProductImage({ photoInfo, alt }: { photoInfo: string | n
         objectUrlRef.current = null;
       }
     };
-  }, [photoInfo]); // `imgSrc` ya no está en las dependencias
+  }, [photoInfo]);
 
   if (isLoading) {
     return (
@@ -59,21 +56,13 @@ export default function ProductImage({ photoInfo, alt }: { photoInfo: string | n
   return (
     <div className="relative w-full h-full">
       <Image
-        src={imgSrc || "/placeholder.svg"}
+        src={imgSrc || FALLBACK_IMAGE_URL}
         alt={alt}
         fill
         className="object-contain p-2 sm:p-3 md:p-4"
-        onError={() => {
-          console.warn(`Error al cargar la imagen: ${imgSrc}`);
-          setImgSrc(FALLBACK_IMAGE_URL);
-        }}
+        onError={() => setImgSrc(FALLBACK_IMAGE_URL)}
         unoptimized
       />
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-red-100 bg-opacity-75">
-          <p className="text-red-500 text-sm">{error}</p>
-        </div>
-      )}
     </div>
   );
 }
