@@ -89,38 +89,52 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
 }
 
 function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
-  const [imgSrc, setImgSrc] = useState<string>(FALLBACK_IMAGE_URL)
+  const [imgSrc, setImgSrc] = useState<string>("")
   const [isLoading, setIsLoading] = useState(true)
+  const [retryCount, setRetryCount] = useState(0)
+  const maxRetries = 3
 
   useEffect(() => {
     if (photoInfo) {
-      const img = new Image()
-      img.crossOrigin = "anonymous"
-      img.src = `${IMAGE_BASE_URL}${photoInfo}`
+      const loadImage = async () => {
+        try {
+          const response = await fetch(`${IMAGE_BASE_URL}${photoInfo}`, {
+            method: "GET",
+            mode: "cors",
+            cache: "no-cache",
+          })
 
-      const handleImageLoad = () => {
-        setImgSrc(img.src)
-        setIsLoading(false)
+          if (response.ok) {
+            const blob = await response.blob()
+            const imageUrl = URL.createObjectURL(blob)
+            setImgSrc(imageUrl)
+            setIsLoading(false)
+          } else {
+            throw new Error("Image load failed")
+          }
+        } catch (error) {
+          console.warn(`Error loading image (attempt ${retryCount + 1}):`, error)
+          if (retryCount < maxRetries) {
+            setRetryCount((prev) => prev + 1)
+          } else {
+            setImgSrc("/placeholder.svg")
+            setIsLoading(false)
+          }
+        }
       }
 
-      const handleImageError = () => {
-        console.warn(`No se pudo cargar la imagen: ${img.src}`)
-        setImgSrc(FALLBACK_IMAGE_URL)
-        setIsLoading(false)
-      }
-
-      img.addEventListener("load", handleImageLoad)
-      img.addEventListener("error", handleImageError)
-
-      return () => {
-        img.removeEventListener("load", handleImageLoad)
-        img.removeEventListener("error", handleImageError)
-      }
+      loadImage()
     } else {
-      setImgSrc(FALLBACK_IMAGE_URL)
+      setImgSrc("/placeholder.svg")
       setIsLoading(false)
     }
-  }, [photoInfo])
+
+    return () => {
+      if (imgSrc.startsWith("blob:")) {
+        URL.revokeObjectURL(imgSrc)
+      }
+    }
+  }, [photoInfo, retryCount])
 
   if (isLoading) {
     return (
@@ -137,8 +151,10 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         alt={alt}
         className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
         onError={() => {
-          console.warn(`Error al cargar la imagen: ${imgSrc}`)
-          setImgSrc(FALLBACK_IMAGE_URL)
+          console.warn(`Error al mostrar la imagen: ${imgSrc}`)
+          if (imgSrc !== "/placeholder.svg") {
+            setImgSrc("/placeholder.svg")
+          }
         }}
       />
     </div>
