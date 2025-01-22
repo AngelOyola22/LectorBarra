@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 
-const IMAGE_BASE_URL = "https://177.234.196.99:8089/images/";
+const IMAGE_BASE_URL = "/api/proxyImage";  // URL del proxy de imágenes que creas en el backend
 const FALLBACK_IMAGE_URL = "https://177.234.196.99:8089/images/LOGONEXT.png";
 
 export default function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
@@ -14,11 +14,8 @@ export default function ProductImage({ photoInfo, alt }: { photoInfo: string | n
     const loadImage = async () => {
       if (photoInfo) {
         try {
-          const response = await fetch(`${IMAGE_BASE_URL}${photoInfo}`, {
-            headers: {
-              Accept: "image/*",
-            },
-          });
+          // Usamos el proxy para cargar la imagen
+          const response = await fetch(`${IMAGE_BASE_URL}?url=${encodeURIComponent(`https://177.234.196.99:8089/images/${photoInfo}`)}`);
           
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
