@@ -5,16 +5,14 @@ import { Maximize, Minimize } from "lucide-react"
 import { useQuery, QueryClient, QueryClientProvider } from "react-query"
 import axios from "axios"
 import Barcode from "react-barcode"
-import Image from "next/image"
+//import Image from "next/image"
+import ProductImage from "./components/ProductImage"
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
 
 // Definir la URL base de la API
 const API_BASE_URL = "/api"
-
-// Definir la URL base para las imágenes
-const IMAGE_BASE_URL = "https://177.234.196.99:8089/images/"
 
 // Tipos y funciones auxiliares (fetchProduct, etc.) aquí...
 
@@ -84,81 +82,6 @@ const fetchProduct = async (genericstring: string): Promise<ApiResponse> => {
     }
     throw error
   }
-}
-
-function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: string }) {
-  const [imgSrc, setImgSrc] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(true)
-  const [retryCount, setRetryCount] = useState(0)
-  const maxRetries = 3
-
-  useEffect(() => {
-    if (photoInfo) {
-      const loadImage = async () => {
-        try {
-          const response = await fetch(`${IMAGE_BASE_URL}${photoInfo}`, {
-            method: "GET",
-            mode: "cors",
-            cache: "no-cache",
-          })
-
-          if (response.ok) {
-            const blob = await response.blob()
-            const imageUrl = URL.createObjectURL(blob)
-            setImgSrc(imageUrl)
-            setIsLoading(false)
-          } else {
-            throw new Error("Image load failed")
-          }
-        } catch (error) {
-          console.warn(`Error loading image (attempt ${retryCount + 1}):`, error)
-          if (retryCount < maxRetries) {
-            setRetryCount((prev) => prev + 1)
-          } else {
-            setImgSrc("/placeholder.svg")
-            setIsLoading(false)
-          }
-        }
-      }
-
-      loadImage()
-    } else {
-      setImgSrc("/placeholder.svg")
-      setIsLoading(false)
-    }
-
-    return () => {
-      if (imgSrc.startsWith("blob:")) {
-        URL.revokeObjectURL(imgSrc)
-      }
-    }
-  }, [photoInfo, retryCount, imgSrc])
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full bg-gray-100">
-        <p className="text-gray-500">Cargando imagen...</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="relative w-full h-full">
-      <Image
-        src={imgSrc || "/placeholder.svg"}
-        alt={alt}
-        fill
-        className="object-contain p-2 sm:p-3 md:p-4"
-        onError={() => {
-          console.warn(`Error al mostrar la imagen: ${imgSrc}`)
-          if (imgSrc !== "/placeholder.svg") {
-            setImgSrc("/placeholder.svg")
-          }
-        }}
-        unoptimized // Para imágenes externas que no pueden ser optimizadas por Next.js
-      />
-    </div>
-  )
 }
 
 function BuscadorProductos() {
