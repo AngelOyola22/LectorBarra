@@ -24,7 +24,11 @@ export async function GET(request: Request) {
     const buffer = await response.arrayBuffer();
     const headers = new Headers();
     headers.set("Content-Type", response.headers.get("Content-Type") || "image/jpeg");
+    
+    // Añadir más cabeceras de CORS para asegurar que el navegador permita la respuesta
     headers.set("Access-Control-Allow-Origin", "*");
+    headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    headers.set("Access-Control-Allow-Headers", "Content-Type");
 
     return new NextResponse(buffer, {
       headers: headers,
