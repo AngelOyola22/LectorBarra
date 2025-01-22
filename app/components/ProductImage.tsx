@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 
 const IMAGE_BASE_URL = "https://177.234.196.99:8089/images/";
 const FALLBACK_IMAGE_URL = "https://177.234.196.99:8089/images/LOGONEXT.png";
@@ -15,16 +14,23 @@ export default function ProductImage({ photoInfo, alt }: { photoInfo: string | n
     const loadImage = async () => {
       if (photoInfo) {
         try {
-          const response = await fetch(`${IMAGE_BASE_URL}${photoInfo}`);
+          const response = await fetch(`${IMAGE_BASE_URL}${photoInfo}`, {
+            headers: {
+              Accept: "image/*",
+            },
+          });
+          
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
+
           const blob = await response.blob();
           const objectUrl = URL.createObjectURL(blob);
           objectUrlRef.current = objectUrl; // Guardar el objeto URL en la referencia
           setImgSrc(objectUrl);
           setIsLoading(false);
-        } catch {
+        } catch (error) {
+          console.error("Error loading image:", error);
           setImgSrc(FALLBACK_IMAGE_URL);
           setIsLoading(false);
         }
@@ -36,7 +42,7 @@ export default function ProductImage({ photoInfo, alt }: { photoInfo: string | n
 
     loadImage();
 
-    // Cleanup function to revocar el objeto URL
+    // Cleanup function to revoke the object URL
     return () => {
       if (objectUrlRef.current) {
         URL.revokeObjectURL(objectUrlRef.current);
@@ -55,13 +61,12 @@ export default function ProductImage({ photoInfo, alt }: { photoInfo: string | n
 
   return (
     <div className="relative w-full h-full">
-      <Image
+      <img
         src={imgSrc || FALLBACK_IMAGE_URL}
         alt={alt}
-        fill
         className="object-contain p-2 sm:p-3 md:p-4"
         onError={() => setImgSrc(FALLBACK_IMAGE_URL)}
-        unoptimized
+        style={{ width: "100%", height: "100%" }}
       />
     </div>
   );
