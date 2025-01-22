@@ -26,8 +26,8 @@ export default function ProductImage({ photoInfo, alt }: { photoInfo: string | n
           setImgSrc(objectUrl);
           setIsLoading(false);
         } catch (e) {
-          console.error(`Error loading image: ${e instanceof Error ? e.message : String(e)}`);
-          setError(`Error loading image: ${e instanceof Error ? e.message : String(e)}`);
+          //console.error(`Error loading image: ${e instanceof Error ? e.message : String(e)}`);
+          //setError(`Error loading image: ${e instanceof Error ? e.message : String(e)}`);
           setImgSrc(FALLBACK_IMAGE_URL);
           setIsLoading(false);
         }
