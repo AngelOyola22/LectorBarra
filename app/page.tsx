@@ -5,6 +5,7 @@ import { Maximize, Minimize } from "lucide-react"
 import { useQuery, QueryClient, QueryClientProvider } from "react-query"
 import axios from "axios"
 import Barcode from "react-barcode"
+import Image from "next/image"
 
 // Crear una instancia de QueryClient
 const queryClient = new QueryClient()
@@ -14,9 +15,6 @@ const API_BASE_URL = "/api"
 
 // Definir la URL base para las imágenes
 const IMAGE_BASE_URL = "https://177.234.196.99:8089/images/"
-
-// Definir la URL de la imagen de fallback
-const FALLBACK_IMAGE_URL = "https://177.234.196.99:8089/images/LOGONEXT.png"
 
 // Tipos y funciones auxiliares (fetchProduct, etc.) aquí...
 
@@ -134,7 +132,7 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
         URL.revokeObjectURL(imgSrc)
       }
     }
-  }, [photoInfo, retryCount])
+  }, [photoInfo, retryCount, imgSrc])
 
   if (isLoading) {
     return (
@@ -146,16 +144,18 @@ function ProductImage({ photoInfo, alt }: { photoInfo: string | null; alt: strin
 
   return (
     <div className="relative w-full h-full">
-      <img
+      <Image
         src={imgSrc || "/placeholder.svg"}
         alt={alt}
-        className="object-contain w-full h-full p-2 sm:p-3 md:p-4"
+        fill
+        className="object-contain p-2 sm:p-3 md:p-4"
         onError={() => {
           console.warn(`Error al mostrar la imagen: ${imgSrc}`)
           if (imgSrc !== "/placeholder.svg") {
             setImgSrc("/placeholder.svg")
           }
         }}
+        unoptimized // Para imágenes externas que no pueden ser optimizadas por Next.js
       />
     </div>
   )
@@ -306,8 +306,8 @@ function BuscadorProductos() {
               <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 md:p-4 mb-2 sm:mb-3 md:mb-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
                   <div className="flex flex-col items-center justify-center">
-                    <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4 flex items-center justify-center">
-                      <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg flex items-center justify-center overflow-hidden">
+                    <div className="relative w-full h-[16rem] sm:h-[20rem] md:h-[24rem] mb-2 sm:mb-3 md:mb-4">
+                      <div className="relative w-full max-w-[18rem] sm:max-w-[22rem] md:max-w-[26rem] h-[16rem] sm:h-[20rem] md:h-[24rem] bg-white-200 rounded-lg overflow-hidden mx-auto">
                         <ProductImage photoInfo={product.Foto} alt={product.Nombre} />
                       </div>
                     </div>
